@@ -160,6 +160,9 @@ ul {
 }
 
 .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
     font-size: 28px;
     font-weight: 800;
     color: var(--primary-color);
@@ -168,6 +171,12 @@ ul {
 
 .logo span {
     color: var(--secondary-color);
+}
+
+.logo-img {
+    height: 40px;
+    width: auto;
+    object-fit: contain;
 }
 
 .search-bar {
@@ -504,6 +513,8 @@ ul {
     color: var(--text-light);
     margin-bottom: 30px;
     line-height: 1.8;
+    white-space: pre-wrap;
+    word-break: break-word;
 }
 
 .quantity-control {
@@ -720,8 +731,8 @@ ul {
 
 .modal-content {
     background-color: var(--white);
-    margin: 5% auto;
-    padding: 30px;
+    margin: 3% auto;
+    padding: 20px;
     border-radius: 8px;
     position: relative;
     box-shadow: var(--shadow-hover);
@@ -762,13 +773,12 @@ ul {
     }
 }
 
-/* ================= Cart System ================= */
 .cart-items {
-    max-height: 300px;
+    max-height: 180px;
     overflow-y: auto;
-    margin-bottom: 20px;
+    margin-bottom: 15px;
     border-bottom: 1px solid var(--border-color);
-    padding-bottom: 20px;
+    padding-bottom: 10px;
 }
 
 .cart-item {
@@ -834,7 +844,7 @@ ul {
 }
 
 .form-group {
-    margin-bottom: 15px;
+    margin-bottom: 10px;
 }
 
 .form-group label {
@@ -855,7 +865,7 @@ ul {
 }
 
 .form-group textarea {
-    height: 100px;
+    height: 50px;
     resize: vertical;
 }
 
@@ -1016,6 +1026,81 @@ ul {
 
     .admin-menu li {
         white-space: nowrap;
+    }
+
+    /* Professional Mobile Enhancements */
+    .hero {
+        height: auto;
+        padding: 50px 0;
+    }
+
+    .hero-title {
+        font-size: 28px;
+    }
+
+    .hero-subtitle {
+        font-size: 16px;
+    }
+
+    .hero-content div {
+        flex-direction: column;
+        padding: 0 15px;
+    }
+
+    .hero-content .btn {
+        width: 100%;
+        margin-bottom: 10px;
+    }
+
+    .product-grid {
+        grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+        gap: 15px;
+    }
+
+    .product-img {
+        height: 180px;
+        padding: 10px;
+    }
+
+    .product-title {
+        font-size: 16px;
+        height: auto;
+        min-height: 48px;
+    }
+
+    .product-price {
+        font-size: 18px;
+    }
+
+    .category-header h1 {
+        font-size: 28px !important;
+    }
+
+    .product-details {
+        width: 100%;
+        padding: 20px;
+        margin: 20px auto;
+        box-shadow: none;
+        border-radius: 0;
+        border-bottom: 1px solid #eee;
+    }
+
+    .product-details-title {
+        font-size: 24px;
+    }
+
+    .logo {
+        font-size: 20px;
+    }
+
+    .logo-img {
+        height: 30px;
+    }
+
+    .sorting-row {
+        flex-direction: column;
+        align-items: flex-start !important;
+        gap: 10px;
     }
 }
 

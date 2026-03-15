@@ -35,7 +35,11 @@
     <!-- Header / Navbar -->
     <header class="header">
         <div class="container header-content">
-            <a href="#" class="logo" id="logo" data-view="home">العاصمة <span>الطبية</span></a>
+            <a href="#" class="logo" id="logo" data-view="home">
+                <img src="logo.png" alt="العاصمة الطبية" class="logo-img"
+                    onerror="this.src='https://via.placeholder.com/40?text=Logo'">
+                العاصمة <span>الطبية</span>
+            </a>
 
             <div class="search-bar">
                 <input type="text" id="searchInput" placeholder="ابحث عن المنتجات...">
@@ -78,7 +82,12 @@
     <footer class="footer">
         <div class="container footer-content">
             <div class="footer-col">
-                <h3 class="footer-logo">العاصمة <span>الطبية</span></h3>
+                <h3 class="footer-logo">
+                    <img src="logo.png" alt="العاصمة الطبية" class="logo-img"
+                        onerror="this.src='https://via.placeholder.com/40?text=Logo'"
+                        style="filter: brightness(0) invert(1);">
+                    العاصمة <span>الطبية</span>
+                </h3>
                 <p>شركة متخصصة في توريد المستلزمات الطبية ومستحضرات التجميل والمستلزمات الرياضية ومستلزمات سلامة الغذاء،
                     بالإضافة إلى تجهيز العيادات وتوفير لوازم الصيدليات.</p>
                 <div class="social-links">
@@ -147,6 +156,10 @@
                     <div class="form-group">
                         <label for="customerPhone">رقم الهاتف:</label>
                         <input type="tel" id="customerPhone" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="orderNotes">ملاحظات الطلب (اختياري):</label>
+                        <textarea id="orderNotes" placeholder="أضف أي ملاحظات إضافية هنا..."></textarea>
                     </div>
                     <button type="submit" class="btn btn-primary btn-block">تأكيد الطلب عبر واتساب <i
                             class="fab fa-whatsapp"></i></button>

@@ -22,7 +22,7 @@ try {
 // --- Initial Data --- //
 const defaultCategories = [
     { id: '1', name: 'مستلزمات طبية', image: 'https://images.unsplash.com/photo-1551076805-e1869033e561?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80' },
-    { id: '2', name: 'مستحضرات تجميل', image: 'https://images.unsplash.com/photo-1596462502278-27bfdc403348?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80' },
+    { id: '2', name: 'مستحضرات تجميل', image: 'cosmetics.png?v=2' },
     { id: '3', name: 'مستلزمات سلامة الغذاء', image: 'https://images.unsplash.com/photo-1584744982491-665216d95f8b?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80' }
 ];
 
@@ -113,7 +113,8 @@ let state = {
     currentParam: null,
     activeProduct: null,
     isAdminAuth: sessionStorage.getItem('mc_admin_auth') === 'true',
-    adminKeys: '' // For secret code
+    adminKeys: '', // For secret code
+    currentSort: 'newest'
 };
 
 // --- initialization --- //
@@ -195,12 +196,23 @@ async function seedDatabase(path, arrayData) {
 }
 
 function patchCategoriesWithImages() {
+    let needsUpdate = false;
     state.categories.forEach(cat => {
-        if (!cat.image) {
+        if (cat.id === '2') {
+            if (!cat.image || !cat.image.includes('cosmetics.png')) {
+                cat.image = 'cosmetics.png?v=2';
+                syncToFirebase('update', 'categories/2', { image: cat.image });
+                needsUpdate = true;
+            }
+        } else if (!cat.image) {
             const defaultCat = defaultCategories.find(dc => dc.id === cat.id);
-            if (defaultCat) cat.image = defaultCat.image;
+            if (defaultCat) {
+                cat.image = defaultCat.image;
+                needsUpdate = true;
+            }
         }
     });
+    if (needsUpdate) saveData();
 }
 
 function saveData() {
@@ -256,13 +268,23 @@ const views = {
                 </div>
             </div>
             <section class="products-section container" style="padding-top: 30px;">
-                ${state.isAdminAuth ? `
-                    <div style="margin-bottom: 20px;">
-                        <button class="btn btn-primary" onclick="openProductModalWithCat('${catId}')"><i class="fas fa-plus"></i> إضافة منتج لهذا القسم</button>
+                <div class="sorting-row" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px;">
+                    ${state.isAdminAuth ? `
+                        <div>
+                            <button class="btn btn-primary" onclick="openProductModalWithCat('${catId}')"><i class="fas fa-plus"></i> إضافة منتج لهذا القسم</button>
+                        </div>
+                    ` : '<div></div>'}
+                    <div class="sort-control" style="display: flex; align-items: center; gap: 10px;">
+                        <label for="sortCats" style="font-weight: bold; color: var(--text-dark);">ترتيب حسب:</label>
+                        <select id="sortCats" onchange="changeSort(this.value, 'category', '${catId}')" style="padding: 8px; border-radius: 4px; border: 1px solid #ccc; font-family: inherit;">
+                            <option value="newest" ${state.currentSort === 'newest' ? 'selected' : ''}>الأحدث</option>
+                            <option value="oldest" ${state.currentSort === 'oldest' ? 'selected' : ''}>الأقدم</option>
+                            <option value="alpha" ${state.currentSort === 'alpha' ? 'selected' : ''}>أبجدياً (أ-ي)</option>
+                        </select>
                     </div>
-                ` : ''}
+                </div>
                 ${catProducts.length > 0 ?
-                `<div class="product-grid">${renderProductsGrid(catProducts)}</div>` :
+                `<div class="product-grid">${renderProductsGrid(sortProductsList(catProducts))}</div>` :
                 `<p style="text-align:center; font-size:18px;">لا توجد منتجات في هذا القسم حاليا.</p>`
             }
             </section>
@@ -277,8 +299,18 @@ const views = {
                 </div>
             </div>
             <section class="products-section container" style="padding-top: 30px;">
+                <div class="sorting-row" style="display: flex; justify-content: flex-end; align-items: center; margin-bottom: 20px;">
+                    <div class="sort-control" style="display: flex; align-items: center; gap: 10px;">
+                        <label for="sortOffs" style="font-weight: bold; color: var(--text-dark);">ترتيب حسب:</label>
+                        <select id="sortOffs" onchange="changeSort(this.value, 'offers')" style="padding: 8px; border-radius: 4px; border: 1px solid #ccc; font-family: inherit;">
+                            <option value="newest" ${state.currentSort === 'newest' ? 'selected' : ''}>الأحدث</option>
+                            <option value="oldest" ${state.currentSort === 'oldest' ? 'selected' : ''}>الأقدم</option>
+                            <option value="alpha" ${state.currentSort === 'alpha' ? 'selected' : ''}>أبجدياً (أ-ي)</option>
+                        </select>
+                    </div>
+                </div>
                 ${offerProducts.length > 0 ?
-                `<div class="product-grid">${renderProductsGrid(offerProducts)}</div>` :
+                `<div class="product-grid">${renderProductsGrid(sortProductsList(offerProducts))}</div>` :
                 `<p style="text-align:center; font-size:18px;">لا توجد عروض حالياً.</p>`
             }
             </section>
@@ -500,6 +532,18 @@ window.openProductModalWithCat = function (catId) {
     }
 }
 
+window.changeSort = function (sortVal, view, param = null) {
+    state.currentSort = sortVal;
+    renderView(view, param);
+}
+
+function sortProductsList(list) {
+    let sorted = [...list];
+    if (state.currentSort === 'newest') sorted.reverse(); // Newest is at the end of the original list
+    else if (state.currentSort === 'alpha') sorted.sort((a, b) => a.name.localeCompare(b.name, 'ar'));
+    return sorted;
+}
+
 window.deleteProductFromGrid = function (id, catId) {
     if (confirm('هل أنت متأكد من حذف هذا المنتج؟')) {
         state.products = state.products.filter(p => p.id !== id);
@@ -693,11 +737,18 @@ function updateCartUI() {
                 <img src="${item.product.image}" alt="${item.product.name}" class="cart-item-img">
                 <div class="cart-item-info">
                     <div class="cart-item-title">${item.product.name}</div>
-                    <div style="font-size: 13px; color: #777;">الكمية: ${item.qty}</div>
-                    <div class="cart-item-price">${itemTotal} ج</div>
+                    <div style="font-size: 13px; color: var(--text-dark); display:flex; align-items:center; gap: 10px; margin-top: 5px;">
+                        الكمية: 
+                        <div class="quantity-control form-control" style="margin-bottom:0; display:inline-flex; border-radius: 4px; overflow: hidden; border: 1px solid var(--border-color);">
+                            <button type="button" onclick="updateCartItemQty(${index}, 1)" style="width:30px;height:30px;font-size:16px; background:var(--bg-light); border:none; cursor:pointer;">+</button>
+                            <span style="width: 30px; text-align: center; border-left: 1px solid var(--border-color); border-right: 1px solid var(--border-color); line-height: 30px; background: white;">${item.qty}</span>
+                            <button type="button" onclick="updateCartItemQty(${index}, -1)" style="width:30px;height:30px;font-size:16px; background:var(--bg-light); border:none; cursor:pointer;">-</button>
+                        </div>
+                    </div>
+                    <div class="cart-item-price" style="margin-top:5px;">${itemTotal} ج</div>
                 </div>
                 <div class="cart-item-controls">
-                    <button class="remove-item" onclick="removeFromCart(${index})"><i class="fas fa-trash"></i></button>
+                    <button class="remove-item" onclick="removeFromCart(${index})" title="حذف من العربة"><i class="fas fa-trash"></i></button>
                 </div>
             </div>
         `;
@@ -706,25 +757,46 @@ function updateCartUI() {
     totalEl.innerText = total;
 }
 
+window.updateCartItemQty = function (index, change) {
+    const item = state.cart[index];
+    if (item) {
+        item.qty += change;
+        if (item.qty < 1) item.qty = 1;
+        saveData();
+        updateCartUI();
+    }
+}
+
 function submitOrder() {
     const name = document.getElementById('customerName').value;
     const phone = document.getElementById('customerPhone').value;
+    const notesEl = document.getElementById('orderNotes');
+    const notes = notesEl ? notesEl.value.trim() : '';
 
     if (state.cart.length === 0) return;
 
     let total = 0;
-    let message = `مرحبا، أرغب في طلب المنتجات التالية من موقع العاصمة الطبية:\n\n`;
 
-    state.cart.forEach(item => {
+    // Professional WhatsApp format
+    let message = `*تفاصيل طلب جديد - العاصمة الطبية*\n\n`;
+
+    state.cart.forEach((item, index) => {
         const itemTotal = item.product.price * item.qty;
         total += itemTotal;
-        message += `- ${item.product.name} × ${item.qty} = ${itemTotal} جنيه\n`;
+        message += `*${index + 1}. ${item.product.name}*\n`;
+        message += `الكمية: ${item.qty} | السعر: ${itemTotal} جنيه\n\n`;
     });
 
-    message += `\nTotal Price: ${total} جنيه\n\n`;
-    message += `Customer Name: ${name}\n`;
-    message += `Customer Phone: ${phone}\n\n`;
-    message += `Thank you.`;
+    message += `*إجمالي الطلب:* ${total} جنيه\n\n`;
+    message += `*بيانات العميل:*\n`;
+    message += `الاسم: ${name}\n`;
+    message += `رقم الهاتف: ${phone}\n`;
+
+    if (notes) {
+        message += `\n*ملاحظات الطلب:*\n${notes}\n`;
+    }
+
+    message += `\nشكرًا لإختيارك شركة العاصمة الطبية.\nتم استلام الأوردر بنجاح، ونعمل الآن على تجهيزه في أسرع وقت، وسنقوم بالتواصل معك.`;
 
     const encodedMessage = encodeURIComponent(message);
     const whatsappNum = "01018683910"; // Default number
