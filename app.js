@@ -1,3 +1,22 @@
+const firebaseConfig = {
+    apiKey: "AIzaSyDKRNpFCvTxV0da-rp9OJB0hO1lbs8vnZw",
+    authDomain: "elasemaeltbia.firebaseapp.com",
+    projectId: "elasemaeltbia",
+    storageBucket: "elasemaeltbia.firebasestorage.app",
+    messagingSenderId: "342333643282",
+    appId: "1:342333643282:web:1bfe62f00e81ce601816cb"
+};
+
+let db = null;
+try {
+    if (typeof firebase !== 'undefined') {
+        firebase.initializeApp(firebaseConfig);
+        db = firebase.database();
+    }
+} catch (e) {
+    console.warn("Firebase init failed:", e);
+}
+
 // --- Initial Data --- //
 const defaultCategories = [
     { id: '1', name: 'مستلزمات طبية', image: 'https://images.unsplash.com/photo-1551076805-e1869033e561?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80' },
@@ -74,26 +93,20 @@ const defaultProducts = [
     }
 ];
 
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js";
-import { getDatabase, ref, set, get, child, remove, update } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-database.js";
-
-const firebaseConfig = {
-    apiKey: "AIzaSyDKRNpFCvTxV0da-rp9OJB0hO1lbs8vnZw",
-    authDomain: "elasemaeltbia.firebaseapp.com",
-    projectId: "elasemaeltbia",
-    storageBucket: "elasemaeltbia.firebasestorage.app",
-    messagingSenderId: "342333643282",
-    appId: "1:342333643282:web:1bfe62f00e81ce601816cb"
-};
-
-const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
-
 // --- Application State --- //
+function getSafeStorage(key, fallback) {
+    try {
+        const data = JSON.parse(localStorage.getItem(key));
+        return Array.isArray(data) ? data : fallback;
+    } catch (e) {
+        return fallback;
+    }
+}
+
 let state = {
     categories: [],
     products: [],
-    cart: JSON.parse(localStorage.getItem('mc_cart')) || [],
+    cart: getSafeStorage('mc_cart', []),
     currentView: 'home',
     currentParam: null,
     activeProduct: null,
@@ -110,28 +123,29 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     try {
-        await fetchInitialData();
-        patchCategoriesWithImages();
-
-        initNavigation();
-        initCart();
-        initSearch();
-        initAdmin();
-        setupAdminListeners();
-        renderFooterCategories();
-        renderView(state.currentView, state.currentParam);
+        const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 4000));
+        await Promise.race([fetchInitialData(), timeoutPromise]);
     } catch (e) {
-        console.error("Error loading data:", e);
-        if (appContent) {
-            appContent.innerHTML = `<div class="container" style="text-align:center; padding: 100px 0; color:red;"><h2>حدث خطأ أثناء الاتصال بقاعدة البيانات.</h2></div>`;
-        }
+        console.warn("Firebase fetch failed or timed out, falling back to local data:", e.message);
+        state.categories = getSafeStorage('mc_categories', [...defaultCategories]);
+        state.products = getSafeStorage('mc_products', [...defaultProducts]);
     }
+
+    patchCategoriesWithImages();
+
+    initNavigation();
+    initCart();
+    initSearch();
+    initAdmin();
+    setupAdminListeners();
+    renderFooterCategories();
+    renderView(state.currentView, state.currentParam);
 });
 
 async function fetchInitialData() {
-    const dbRef = ref(db);
     try {
-        const snapshot = await get(child(dbRef, 'medical_capital'));
+        if (!db) throw new Error("Firebase DB not initialized");
+        const snapshot = await db.ref('medical_capital').get();
         if (snapshot.exists()) {
             const data = snapshot.val();
 
@@ -170,11 +184,12 @@ async function fetchInitialData() {
 }
 
 async function seedDatabase(path, arrayData) {
+    if (!db) return;
     const updateObj = {};
     arrayData.forEach(item => {
         updateObj[`medical_capital/${path}/${item.id}`] = item;
     });
-    await update(ref(db), updateObj);
+    await db.ref().update(updateObj);
 }
 
 function patchCategoriesWithImages() {
@@ -187,8 +202,22 @@ function patchCategoriesWithImages() {
 }
 
 function saveData() {
-    // We only save cart locally now
+    // Always save locally to ensure site logic never breaks
+    localStorage.setItem('mc_categories', JSON.stringify(state.categories));
+    localStorage.setItem('mc_products', JSON.stringify(state.products));
     localStorage.setItem('mc_cart', JSON.stringify(state.cart));
+}
+
+async function syncToFirebase(action, pathStr, data = null) {
+    try {
+        if (!db) return;
+        const dbRef = db.ref(`medical_capital/${pathStr}`);
+        if (action === 'set') await dbRef.set(data);
+        if (action === 'update') await dbRef.update(data);
+        if (action === 'remove') await dbRef.remove();
+    } catch (e) {
+        console.warn('Firebase Sync Ignored:', e.message);
+    }
 }
 
 // --- Navigation & Routing --- //
@@ -469,22 +498,18 @@ window.openProductModalWithCat = function (catId) {
     }
 }
 
-window.deleteProductFromGrid = async function (id, catId) {
+window.deleteProductFromGrid = function (id, catId) {
     if (confirm('هل أنت متأكد من حذف هذا المنتج؟')) {
-        try {
-            await remove(ref(db, `medical_capital/products/${id}`));
-            state.products = state.products.filter(p => p.id !== id);
-            state.cart = state.cart.filter(item => item.product.id !== id);
-            saveData();
-            updateCartUI();
-            if (state.currentView === 'category') {
-                renderView('category', catId);
-            } else {
-                renderView(state.currentView);
-            }
-        } catch (e) {
-            alert('حدث خطأ أثناء الحذف');
+        state.products = state.products.filter(p => p.id !== id);
+        state.cart = state.cart.filter(item => item.product.id !== id);
+        saveData();
+        updateCartUI();
+        if (state.currentView === 'category') {
+            renderView('category', catId);
+        } else {
+            renderView(state.currentView);
         }
+        syncToFirebase('remove', `products/${id}`);
     }
 }
 
@@ -523,8 +548,9 @@ function renderProductsGrid(productsList) {
 }
 
 function initNavigation() {
-    document.querySelectorAll('[data-view]').forEach(el => {
-        el.addEventListener('click', (e) => {
+    document.body.addEventListener('click', (e) => {
+        const el = e.target.closest('[data-view]');
+        if (el) {
             e.preventDefault();
             const view = el.getAttribute('data-view');
             const catId = el.getAttribute('data-cat-id');
@@ -536,11 +562,12 @@ function initNavigation() {
                 const targetNav = document.querySelector(`.nav-list a[data-view="${view}"]${catId ? `[data-cat-id="${catId}"]` : ''}`);
                 if (targetNav) targetNav.classList.add('active');
             } else if (view === 'home') {
-                document.querySelector('.nav-list a[data-view="home"]').classList.add('active');
+                const homeNav = document.querySelector('.nav-list a[data-view="home"]');
+                if (homeNav) homeNav.classList.add('active');
             }
 
             navigateTo(view, catId || prodId);
-        });
+        }
     });
 
     // Mobile menu
@@ -589,13 +616,7 @@ function renderFooterCategories() {
     fc.innerHTML = state.categories.slice(0, 5).map(c => `
         <li><a href="#" data-view="category" data-cat-id="${c.id}">${c.name}</a></li>
     `).join('');
-    // re-attach events for footer
-    fc.querySelectorAll('[data-view]').forEach(el => {
-        el.addEventListener('click', (e) => {
-            e.preventDefault();
-            navigateTo(el.getAttribute('data-view'), el.getAttribute('data-cat-id'));
-        });
-    });
+    // Event delegation from initNavigation handles these links now
 }
 
 // --- Cart System --- //
@@ -862,39 +883,32 @@ function setupAdminListeners() {
         });
     }
 
-    // Cloudinary setup
-    const uploadBtn = document.getElementById("upload_widget");
-    if (uploadBtn) {
-        uploadBtn.addEventListener("click", function (e) {
-            e.preventDefault();
-            if (window.cloudinary) {
-                var myWidget = cloudinary.createUploadWidget({
-                    cloudName: "dwkwwltkv",
-                    uploadPreset: "unsigned_upload"
-                }, (error, result) => {
-                    if (!error && result && result.event === "success") {
-                        var imageUrl = result.info.secure_url;
+    // Local File Image Upload
+    const imageInput = document.getElementById('imageInput');
+    const urlInput = document.getElementById("adminProdImgData");
+    const preview = document.getElementById("imgPreview");
 
-                        // Show Image
-                        const preview = document.getElementById("imgPreview");
-                        preview.src = imageUrl;
+    if (imageInput) {
+        imageInput.addEventListener('change', function (e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function (event) {
+                    const base64String = event.target.result;
+                    if (preview && urlInput) {
+                        preview.src = base64String;
                         preview.style.display = "block";
-
-                        // Set URL to input
-                        const urlInput = document.getElementById("adminProdImgData");
-                        urlInput.value = imageUrl;
+                        urlInput.value = base64String;
                     }
-                });
-                myWidget.open();
-            } else {
-                alert("جاري تحميل أداة الرفع.. يرجى الانتظار ثوانٍ والمحاولة مرة أخرى.");
+                };
+                reader.readAsDataURL(file);
             }
-        }, false);
+        });
     }
 
     const prodForm = document.getElementById('productForm');
     if (prodForm) {
-        prodForm.addEventListener('submit', async (e) => {
+        prodForm.addEventListener('submit', (e) => {
             e.preventDefault();
 
             const submitBtn = prodForm.querySelector('button[type="submit"]');
@@ -915,32 +929,29 @@ function setupAdminListeners() {
                 isOffer: document.getElementById('adminProdOffer').checked
             };
 
-            try {
-                // Save to Firebase
-                await set(ref(db, `medical_capital/products/${id}`), product);
-
-                // Update local state
-                const existingIdx = state.products.findIndex(p => p.id === id);
-                if (existingIdx >= 0) {
-                    state.products[existingIdx] = product;
-                } else {
-                    state.products.push(product);
-                }
-
-                document.getElementById('productModal').classList.remove('active');
-                renderView(state.currentView, state.currentParam);
-            } catch (error) {
-                alert('حدث خطأ: ' + error.message);
-            } finally {
-                submitBtn.innerText = originalBtnText;
-                submitBtn.disabled = false;
+            // Update local state optimistic
+            const existingIdx = state.products.findIndex(p => p.id === id);
+            if (existingIdx >= 0) {
+                state.products[existingIdx] = product;
+            } else {
+                state.products.push(product);
             }
+
+            saveData();
+            document.getElementById('productModal').classList.remove('active');
+            renderView(state.currentView, state.currentParam);
+
+            // Sync to Firebase silently
+            syncToFirebase('set', `products/${id}`, product);
+
+            submitBtn.innerText = originalBtnText;
+            submitBtn.disabled = false;
         });
     }
 
     const catForm = document.getElementById('addCategoryForm');
     if (catForm) {
-        catForm.addEventListener('submit', async (e) => {
+        catForm.addEventListener('submit', (e) => {
             e.preventDefault();
 
             const submitBtn = catForm.querySelector('button[type="submit"]');
@@ -954,26 +965,23 @@ function setupAdminListeners() {
                 name: name
             };
 
-            try {
-                // Save to Firebase
-                await set(ref(db, `medical_capital/categories/${newCat.id}`), newCat);
+            state.categories.push(newCat);
+            saveData();
+            renderFooterCategories();
+            renderView('admin');
 
-                state.categories.push(newCat);
-                renderFooterCategories();
-                renderView('admin'); // Re-render to show updated tables
-
-                // Re-switch to categories panel since renderView defaults to Products panel visually in HTML structure
-                if (state.currentView === 'admin') {
-                    setTimeout(() => {
-                        document.querySelectorAll('.admin-menu li')[1].click();
-                    }, 0);
-                }
-            } catch (e) {
-                alert('حدث خطأ أثناء حفظ القسم');
-            } finally {
-                submitBtn.innerText = originalBtnText;
-                submitBtn.disabled = false;
+            if (state.currentView === 'admin') {
+                setTimeout(() => {
+                    const el = document.querySelectorAll('.admin-menu li')[1];
+                    if (el) el.click();
+                }, 0);
             }
+
+            // Sync to Firebase silently
+            syncToFirebase('set', `categories/${newCat.id}`, newCat);
+
+            submitBtn.innerText = originalBtnText;
+            submitBtn.disabled = false;
         });
     }
 }
@@ -1037,6 +1045,7 @@ window.deleteProduct = function (id) {
         } else {
             renderView(state.currentView, state.currentParam);
         }
+        syncToFirebase('remove', `products/${id}`);
     }
 }
 
@@ -1061,13 +1070,14 @@ window.editCategory = function (id) {
         if (state.currentView === 'admin') {
             renderView('admin');
             setTimeout(() => {
-                if (document.querySelectorAll('.admin-menu li')[1]) {
-                    document.querySelectorAll('.admin-menu li')[1].click();
-                }
+                const el = document.querySelectorAll('.admin-menu li')[1];
+                if (el) el.click();
             }, 0);
         } else {
             renderView(state.currentView, state.currentParam);
         }
+
+        syncToFirebase('set', `categories/${id}`, c);
     }
 }
 
@@ -1085,7 +1095,16 @@ window.deleteCategory = function (id) {
         renderFooterCategories();
         renderView('admin');
         setTimeout(() => {
-            document.querySelectorAll('.admin-menu li')[1].click();
+            const el = document.querySelectorAll('.admin-menu li')[1];
+            if (el) el.click();
         }, 0);
+
+        syncToFirebase('remove', `categories/${id}`);
     }
 }
+
+// Expose internal functions to the global window object to make HTML inline onclick attributes work with type="module"
+window.navigateTo = navigateTo;
+if (typeof addToCart !== 'undefined') window.addToCart = addToCart;
+if (typeof removeFromCart !== 'undefined') window.removeFromCart = removeFromCart;
+if (typeof updateCartQuantity !== 'undefined') window.updateCartQuantity = updateCartQuantity;

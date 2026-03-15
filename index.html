@@ -14,8 +14,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="style.css">
 
-    <!-- Cloudinary Script -->
-    <script src="https://upload-widget.cloudinary.com/global/all.js"></script>
+    <!-- Cloudinary Removed, using local upload -->
 </head>
 
 <body>
@@ -202,10 +201,12 @@
                 </div>
                 <div class="form-group">
                     <label>صورة المنتج</label>
+                    <input type="file" id="imageInput" accept="image/*" style="display: none;">
                     <button type="button" id="upload_widget" class="btn btn-secondary"
-                        style="margin-bottom: 10px; width:100%;"><i class="fas fa-cloud-upload-alt"></i> رفع صورة
-                        للمنتج</button>
-                    <input type="text" id="adminProdImgData" placeholder="رابط الصورة (يمكنك رفعه أو وضعه هنا)" required
+                        onclick="document.getElementById('imageInput').click()"
+                        style="margin-bottom: 10px; width:100%;"><i class="fas fa-cloud-upload-alt"></i> اختر صورة من
+                        جهازك</button>
+                    <input type="text" id="adminProdImgData" placeholder="أو ضع رابط الصورة هنا" required
                         style="width:100%;">
                     <img id="imgPreview"
                         style="display:none; margin-top:10px; max-width:150px; border-radius:4px; border:1px solid #ccc;">
@@ -234,8 +235,12 @@
                 class="fab fa-facebook-f"></i></a>
     </div>
 
+    <!-- Firebase Compat Scripts -->
+    <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-database-compat.js"></script>
+
     <!-- Scripts -->
-    <script type="module" src="app.js"></script>
+    <script src="app.js"></script>
 </body>
 
 </html>
