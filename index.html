@@ -11,9 +11,11 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;800&display=swap" rel="stylesheet">
-    <!-- FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="style.css">
+
+    <!-- Cloudinary Script -->
+    <script src="https://upload-widget.cloudinary.com/global/all.js"></script>
 </head>
 
 <body>
@@ -200,10 +202,13 @@
                 </div>
                 <div class="form-group">
                     <label>صورة المنتج</label>
-                    <input type="file" id="adminProdImgFile" accept="image/*" onchange="previewImage(event)">
-                    <input type="hidden" id="adminProdImgData" required>
+                    <button type="button" id="upload_widget" class="btn btn-secondary"
+                        style="margin-bottom: 10px; width:100%;"><i class="fas fa-cloud-upload-alt"></i> رفع صورة
+                        للمنتج</button>
+                    <input type="text" id="adminProdImgData" placeholder="رابط الصورة (يمكنك رفعه أو وضعه هنا)" required
+                        style="width:100%;">
                     <img id="imgPreview"
-                        style="display:none; margin-top:10px; max-width:100px; border-radius:4px; border:1px solid #ccc;">
+                        style="display:none; margin-top:10px; max-width:150px; border-radius:4px; border:1px solid #ccc;">
                 </div>
                 <div class="form-group">
                     <label>الوصف</label>
@@ -230,7 +235,7 @@
     </div>
 
     <!-- Scripts -->
-    <script src="app.js"></script>
+    <script type="module" src="app.js"></script>
 </body>
 
 </html>

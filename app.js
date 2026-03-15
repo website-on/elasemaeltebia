@@ -74,10 +74,25 @@ const defaultProducts = [
     }
 ];
 
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js";
+import { getDatabase, ref, set, get, child, remove, update } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-database.js";
+
+const firebaseConfig = {
+    apiKey: "AIzaSyDKRNpFCvTxV0da-rp9OJB0hO1lbs8vnZw",
+    authDomain: "elasemaeltbia.firebaseapp.com",
+    projectId: "elasemaeltbia",
+    storageBucket: "elasemaeltbia.firebasestorage.app",
+    messagingSenderId: "342333643282",
+    appId: "1:342333643282:web:1bfe62f00e81ce601816cb"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
 // --- Application State --- //
 let state = {
-    categories: JSON.parse(localStorage.getItem('mc_categories')) || defaultCategories,
-    products: JSON.parse(localStorage.getItem('mc_products')) || defaultProducts,
+    categories: [],
+    products: [],
     cart: JSON.parse(localStorage.getItem('mc_cart')) || [],
     currentView: 'home',
     currentParam: null,
@@ -86,29 +101,93 @@ let state = {
     adminKeys: '' // For secret code
 };
 
-// Patch existing categories that might miss images from previous localStorage cache
-state.categories.forEach(cat => {
-    if (!cat.image) {
-        const defaultCat = defaultCategories.find(dc => dc.id === cat.id);
-        if (defaultCat) cat.image = defaultCat.image;
+// --- initialization --- //
+document.addEventListener('DOMContentLoaded', async () => {
+    // Show loading state while fetching from Firebase
+    const appContent = document.getElementById('app-content');
+    if (appContent) {
+        appContent.innerHTML = `<div class="container" style="text-align:center; padding: 100px 0;"><h2>جاري تحميل البيانات...</h2></div>`;
+    }
+
+    try {
+        await fetchInitialData();
+        patchCategoriesWithImages();
+
+        initNavigation();
+        initCart();
+        initSearch();
+        initAdmin();
+        setupAdminListeners();
+        renderFooterCategories();
+        renderView(state.currentView, state.currentParam);
+    } catch (e) {
+        console.error("Error loading data:", e);
+        if (appContent) {
+            appContent.innerHTML = `<div class="container" style="text-align:center; padding: 100px 0; color:red;"><h2>حدث خطأ أثناء الاتصال بقاعدة البيانات.</h2></div>`;
+        }
     }
 });
 
-// --- initialization --- //
-document.addEventListener('DOMContentLoaded', () => {
-    saveData(); // Make sure initial data is saved
-    initNavigation();
-    initCart();
-    initSearch();
-    initAdmin();
-    setupAdminListeners();
-    renderFooterCategories();
-    renderView(state.currentView, state.currentParam);
-});
+async function fetchInitialData() {
+    const dbRef = ref(db);
+    try {
+        const snapshot = await get(child(dbRef, 'medical_capital'));
+        if (snapshot.exists()) {
+            const data = snapshot.val();
+
+            // Format Categories
+            if (data.categories) {
+                state.categories = Object.keys(data.categories).map(key => ({
+                    id: key,
+                    ...data.categories[key]
+                }));
+            } else {
+                state.categories = [...defaultCategories];
+                await seedDatabase('categories', state.categories);
+            }
+
+            // Format Products
+            if (data.products) {
+                state.products = Object.keys(data.products).map(key => ({
+                    id: key,
+                    ...data.products[key]
+                }));
+            } else {
+                state.products = [...defaultProducts];
+                await seedDatabase('products', state.products);
+            }
+        } else {
+            // First time initialization
+            state.categories = [...defaultCategories];
+            state.products = [...defaultProducts];
+            await seedDatabase('categories', state.categories);
+            await seedDatabase('products', state.products);
+        }
+    } catch (error) {
+        console.error("Firebase read failed: " + error.message);
+        throw error;
+    }
+}
+
+async function seedDatabase(path, arrayData) {
+    const updateObj = {};
+    arrayData.forEach(item => {
+        updateObj[`medical_capital/${path}/${item.id}`] = item;
+    });
+    await update(ref(db), updateObj);
+}
+
+function patchCategoriesWithImages() {
+    state.categories.forEach(cat => {
+        if (!cat.image) {
+            const defaultCat = defaultCategories.find(dc => dc.id === cat.id);
+            if (defaultCat) cat.image = defaultCat.image;
+        }
+    });
+}
 
 function saveData() {
-    localStorage.setItem('mc_categories', JSON.stringify(state.categories));
-    localStorage.setItem('mc_products', JSON.stringify(state.products));
+    // We only save cart locally now
     localStorage.setItem('mc_cart', JSON.stringify(state.cart));
 }
 
@@ -390,16 +469,21 @@ window.openProductModalWithCat = function (catId) {
     }
 }
 
-window.deleteProductFromGrid = function (id, catId) {
+window.deleteProductFromGrid = async function (id, catId) {
     if (confirm('هل أنت متأكد من حذف هذا المنتج؟')) {
-        state.products = state.products.filter(p => p.id !== id);
-        state.cart = state.cart.filter(item => item.product.id !== id);
-        saveData();
-        updateCartUI();
-        if (state.currentView === 'category') {
-            renderView('category', catId);
-        } else {
-            renderView(state.currentView);
+        try {
+            await remove(ref(db, `medical_capital/products/${id}`));
+            state.products = state.products.filter(p => p.id !== id);
+            state.cart = state.cart.filter(item => item.product.id !== id);
+            saveData();
+            updateCartUI();
+            if (state.currentView === 'category') {
+                renderView('category', catId);
+            } else {
+                renderView(state.currentView);
+            }
+        } catch (e) {
+            alert('حدث خطأ أثناء الحذف');
         }
     }
 }
@@ -768,23 +852,55 @@ window.switchAdminPanel = function (panel, event) {
 }
 
 function setupAdminListeners() {
-    window.previewImage = function (event) {
-        const file = event.target.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = function (e) {
-            document.getElementById('adminProdImgData').value = e.target.result;
+    // Listen for manual image URL input
+    const imgDataInput = document.getElementById('adminProdImgData');
+    if (imgDataInput) {
+        imgDataInput.addEventListener('input', (e) => {
             const preview = document.getElementById('imgPreview');
-            preview.src = e.target.result;
-            preview.style.display = 'block';
-        };
-        reader.readAsDataURL(file);
-    };
+            preview.src = e.target.value;
+            preview.style.display = e.target.value ? 'block' : 'none';
+        });
+    }
+
+    // Cloudinary setup
+    const uploadBtn = document.getElementById("upload_widget");
+    if (uploadBtn) {
+        uploadBtn.addEventListener("click", function (e) {
+            e.preventDefault();
+            if (window.cloudinary) {
+                var myWidget = cloudinary.createUploadWidget({
+                    cloudName: "dwkwwltkv",
+                    uploadPreset: "unsigned_upload"
+                }, (error, result) => {
+                    if (!error && result && result.event === "success") {
+                        var imageUrl = result.info.secure_url;
+
+                        // Show Image
+                        const preview = document.getElementById("imgPreview");
+                        preview.src = imageUrl;
+                        preview.style.display = "block";
+
+                        // Set URL to input
+                        const urlInput = document.getElementById("adminProdImgData");
+                        urlInput.value = imageUrl;
+                    }
+                });
+                myWidget.open();
+            } else {
+                alert("جاري تحميل أداة الرفع.. يرجى الانتظار ثوانٍ والمحاولة مرة أخرى.");
+            }
+        }, false);
+    }
 
     const prodForm = document.getElementById('productForm');
     if (prodForm) {
-        prodForm.addEventListener('submit', (e) => {
+        prodForm.addEventListener('submit', async (e) => {
             e.preventDefault();
+
+            const submitBtn = prodForm.querySelector('button[type="submit"]');
+            const originalBtnText = submitBtn.innerText;
+            submitBtn.innerText = 'جاري الحفظ...';
+            submitBtn.disabled = true;
 
             const id = document.getElementById('adminProdId').value || 'p_' + Date.now();
             const product = {
@@ -799,38 +915,64 @@ function setupAdminListeners() {
                 isOffer: document.getElementById('adminProdOffer').checked
             };
 
-            const existingIdx = state.products.findIndex(p => p.id === id);
-            if (existingIdx >= 0) {
-                state.products[existingIdx] = product;
-            } else {
-                state.products.push(product);
-            }
+            try {
+                // Save to Firebase
+                await set(ref(db, `medical_capital/products/${id}`), product);
 
-            saveData();
-            document.getElementById('productModal').classList.remove('active');
-            renderView(state.currentView, state.currentParam);
+                // Update local state
+                const existingIdx = state.products.findIndex(p => p.id === id);
+                if (existingIdx >= 0) {
+                    state.products[existingIdx] = product;
+                } else {
+                    state.products.push(product);
+                }
+
+                document.getElementById('productModal').classList.remove('active');
+                renderView(state.currentView, state.currentParam);
+            } catch (error) {
+                alert('حدث خطأ: ' + error.message);
+            } finally {
+                submitBtn.innerText = originalBtnText;
+                submitBtn.disabled = false;
+            }
         });
     }
 
     const catForm = document.getElementById('addCategoryForm');
     if (catForm) {
-        catForm.addEventListener('submit', (e) => {
+        catForm.addEventListener('submit', async (e) => {
             e.preventDefault();
+
+            const submitBtn = catForm.querySelector('button[type="submit"]');
+            const originalBtnText = submitBtn.innerText;
+            submitBtn.innerText = '...';
+            submitBtn.disabled = true;
+
             const name = document.getElementById('newCategoryName').value;
             const newCat = {
                 id: 'c_' + Date.now(),
                 name: name
             };
-            state.categories.push(newCat);
-            saveData();
-            renderFooterCategories();
-            renderView('admin'); // Re-render to show updated tables
 
-            // Re-switch to categories panel since renderView defaults to Products panel visually in HTML structure
-            if (state.currentView === 'admin') {
-                setTimeout(() => {
-                    document.querySelectorAll('.admin-menu li')[1].click();
-                }, 0);
+            try {
+                // Save to Firebase
+                await set(ref(db, `medical_capital/categories/${newCat.id}`), newCat);
+
+                state.categories.push(newCat);
+                renderFooterCategories();
+                renderView('admin'); // Re-render to show updated tables
+
+                // Re-switch to categories panel since renderView defaults to Products panel visually in HTML structure
+                if (state.currentView === 'admin') {
+                    setTimeout(() => {
+                        document.querySelectorAll('.admin-menu li')[1].click();
+                    }, 0);
+                }
+            } catch (e) {
+                alert('حدث خطأ أثناء حفظ القسم');
+            } finally {
+                submitBtn.innerText = originalBtnText;
+                submitBtn.disabled = false;
             }
         });
     }
