@@ -1,0 +1,949 @@
+// --- Initial Data --- //
+const defaultCategories = [
+    { id: '1', name: 'مستلزمات طبية', image: 'https://images.unsplash.com/photo-1551076805-e1869033e561?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80' },
+    { id: '2', name: 'مستحضرات تجميل', image: 'https://images.unsplash.com/photo-1596462502278-27bfdc403348?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80' },
+    { id: '3', name: 'مستلزمات سلامة الغذاء', image: 'https://images.unsplash.com/photo-1584744982491-665216d95f8b?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80' }
+];
+
+const defaultProducts = [
+    {
+        id: 'p1',
+        name: 'جهاز قياس ضغط الدم الديجيتال',
+        price: 850,
+        oldPrice: 1000,
+        categoryId: '1',
+        image: 'https://images.unsplash.com/photo-1631549916768-4119b2e5f926?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80',
+        description: 'جهاز قياس ضغط الدم عالي الدقة مع شاشة ديجيتال كبيرة وقراءة سريعة.',
+        inStock: true,
+        isOffer: true
+    },
+    {
+        id: 'p2',
+        name: 'كمامة طبية 3 طبقات (علبة 50 قطعة)',
+        price: 50,
+        oldPrice: null,
+        categoryId: '1',
+        image: 'https://images.unsplash.com/photo-1586942540191-ddb6fdfaa963?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80',
+        description: 'كمامة طبية معتمدة ثلاث طبقات للحماية الكاملة.',
+        inStock: true,
+        isOffer: false
+    },
+    {
+        id: 'p3',
+        name: 'سيروم فيتامين سي للوجه',
+        price: 350,
+        oldPrice: 420,
+        categoryId: '2',
+        image: 'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80',
+        description: 'سيروم لتفتيح البشرة ومحاربة التجاعيد، غني بفيتامين سي النقي.',
+        inStock: true,
+        isOffer: true
+    },
+    {
+        id: 'p4',
+        name: 'كريم مرطب طبي يومي',
+        price: 180,
+        oldPrice: null,
+        categoryId: '2',
+        image: 'https://images.unsplash.com/photo-1617897903246-719242758050?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80',
+        description: 'كريم مرطب عميق للبشرة الجافة والحساسة.',
+        inStock: true,
+        isOffer: false
+    },
+    {
+        id: 'p5',
+        name: 'قفازات لاتكس (علبة 100 قطعة)',
+        price: 120,
+        oldPrice: null,
+        categoryId: '3',
+        image: 'https://images.unsplash.com/photo-1584744982491-665216d95f8b?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80',
+        description: 'قفازات عالية الجودة للتعامل الآمن والمقاوم للقطع.',
+        inStock: true,
+        isOffer: false
+    },
+    {
+        id: 'p6',
+        name: 'مقياس حرارة بالأشعة تحت الحمراء',
+        price: 550,
+        oldPrice: 650,
+        categoryId: '1',
+        image: 'https://images.unsplash.com/photo-1603554472390-e5bf3a713837?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80',
+        description: 'ترمومتر ديجيتال عن بعد لقياس الحرارة بسرعة فائقة.',
+        inStock: false,
+        isOffer: true
+    }
+];
+
+// --- Application State --- //
+let state = {
+    categories: JSON.parse(localStorage.getItem('mc_categories')) || defaultCategories,
+    products: JSON.parse(localStorage.getItem('mc_products')) || defaultProducts,
+    cart: JSON.parse(localStorage.getItem('mc_cart')) || [],
+    currentView: 'home',
+    currentParam: null,
+    activeProduct: null,
+    isAdminAuth: sessionStorage.getItem('mc_admin_auth') === 'true',
+    adminKeys: '' // For secret code
+};
+
+// Patch existing categories that might miss images from previous localStorage cache
+state.categories.forEach(cat => {
+    if (!cat.image) {
+        const defaultCat = defaultCategories.find(dc => dc.id === cat.id);
+        if (defaultCat) cat.image = defaultCat.image;
+    }
+});
+
+// --- initialization --- //
+document.addEventListener('DOMContentLoaded', () => {
+    saveData(); // Make sure initial data is saved
+    initNavigation();
+    initCart();
+    initSearch();
+    initAdmin();
+    setupAdminListeners();
+    renderFooterCategories();
+    renderView(state.currentView, state.currentParam);
+});
+
+function saveData() {
+    localStorage.setItem('mc_categories', JSON.stringify(state.categories));
+    localStorage.setItem('mc_products', JSON.stringify(state.products));
+    localStorage.setItem('mc_cart', JSON.stringify(state.cart));
+}
+
+// --- Navigation & Routing --- //
+const appContent = document.getElementById('app-content');
+
+const views = {
+    home: () => `
+        <section class="hero">
+            <div class="hero-content">
+                <h1 class="hero-title">العاصمة الطبية</h1>
+                <p class="hero-subtitle">شريكك الموثوق في المستلزمات الطبية ومستحضرات التجميل والسلامة</p>
+                <div style="display: flex; gap: 15px; justify-content: center;">
+                    <a href="#" class="btn btn-secondary" style="font-size: 18px; padding: 15px 30px;" data-view="category" data-cat-id="1">تسوق المستلزمات الطبية</a>
+                    <a href="#" class="btn btn-accent" style="font-size: 18px; padding: 15px 30px;" data-view="offers">شاهد أحدث العروض</a>
+                </div>
+            </div>
+        </section>
+        <section class="products-section container">
+            <h2 class="section-title">المنتجات المميزة</h2>
+            <div class="product-grid">
+                ${renderProductsGrid(state.products.slice(0, 8))}
+            </div>
+        </section>
+    `,
+    category: (catId) => {
+        const cat = state.categories.find(c => c.id === catId);
+        const catProducts = state.products.filter(p => p.categoryId === catId);
+        const catImage = cat && cat.image ? cat.image : 'https://images.unsplash.com/photo-1631549916768-4119b2e5f926?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80';
+
+        return `
+            <div class="category-header" style="background: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), url('${catImage}') center/cover; padding: 60px 0;">
+                <div class="container text-center">
+                    <h1 style="color: white; font-size: 40px; margin: 0;">${cat ? cat.name : 'القسم'}</h1>
+                </div>
+            </div>
+            <section class="products-section container" style="padding-top: 30px;">
+                ${state.isAdminAuth ? `
+                    <div style="margin-bottom: 20px;">
+                        <button class="btn btn-primary" onclick="openProductModalWithCat('${catId}')"><i class="fas fa-plus"></i> إضافة منتج لهذا القسم</button>
+                    </div>
+                ` : ''}
+                ${catProducts.length > 0 ?
+                `<div class="product-grid">${renderProductsGrid(catProducts)}</div>` :
+                `<p style="text-align:center; font-size:18px;">لا توجد منتجات في هذا القسم حاليا.</p>`
+            }
+            </section>
+        `;
+    },
+    offers: () => {
+        const offerProducts = state.products.filter(p => p.isOffer);
+        return `
+            <div class="page-header">
+                <div class="container">
+                    <h1>أحدث العروض</h1>
+                </div>
+            </div>
+            <section class="products-section container" style="padding-top: 30px;">
+                ${offerProducts.length > 0 ?
+                `<div class="product-grid">${renderProductsGrid(offerProducts)}</div>` :
+                `<p style="text-align:center; font-size:18px;">لا توجد عروض حالياً.</p>`
+            }
+            </section>
+        `;
+    },
+    product: (prodId) => {
+        const product = state.products.find(p => p.id === prodId);
+        if (!product) return `<div class="container"><p>المنتج غير موجود</p></div>`;
+        const cat = state.categories.find(c => c.id === product.categoryId);
+
+        return `
+            <div class="product-details">
+                <div class="product-details-img">
+                    <img src="${product.image}" alt="${product.name}">
+                </div>
+                <div class="product-details-info">
+                    <span class="product-category">${cat ? cat.name : ''}</span>
+                    <h1 class="product-details-title">${product.name}</h1>
+                    <div class="product-status ${product.inStock ? 'status-instock' : 'status-outstock'}">
+                        <i class="fas ${product.inStock ? 'fa-check-circle' : 'fa-times-circle'}"></i> 
+                        ${product.inStock ? 'متوفر بالمخزون' : 'غير متوفر حالياً'}
+                    </div>
+                    <div class="product-details-price">
+                        ${product.price} جنيه
+                        ${product.oldPrice ? `<span class="old-price">${product.oldPrice} جنيه</span>` : ''}
+                    </div>
+                    <p class="product-details-desc">${product.description || 'لا يوجد وصف متاح.'}</p>
+                    
+                    ${product.inStock ? `
+                        <div class="quantity-control">
+                            <button class="quantity-btn" onclick="updateQtyInput(1)">+</button>
+                            <input type="number" id="detailQty" class="quantity-input" value="1" min="1">
+                            <button class="quantity-btn" onclick="updateQtyInput(-1)">-</button>
+                        </div>
+                        <button class="btn btn-primary btn-block" onclick="addToCart('${product.id}', parseInt(document.getElementById('detailQty').value))" style="font-size: 18px; padding: 15px;">
+                            <i class="fas fa-cart-plus"></i> أضف إلى العربة
+                        </button>
+                    ` : `
+                        <button class="btn btn-secondary btn-block" disabled style="opacity:0.6;">غير متوفر حاليا</button>
+                    `}
+                </div>
+            </div>
+        `;
+    },
+    about: () => `
+        <div class="page-header">
+            <div class="container">
+                <h1>من نحن</h1>
+            </div>
+        </div>
+        <div class="content-section">
+            <div style="text-align: center; margin-bottom: 30px;">
+                <h2 style="color: var(--primary-color); font-size: 32px; font-weight: 800;">العاصمة <span style="color: var(--secondary-color);">الطبية</span></h2>
+            </div>
+            <p><strong>العاصمة الطبية</strong> شركة متخصصة في توريد المستلزمات الطبية ومستحضرات التجميل والمستلزمات الرياضية ومستلزمات سلامة الغذاء، بالإضافة إلى تجهيز العيادات وتوفير لوازم الصيدليات.</p>
+            <p>نعمل على تقديم حلول متكاملة تلبي احتياجات القطاع الطبي والقطاعات المرتبطة به، مع الالتزام بتوفير منتجات عالية الجودة مطابقة لأعلى معايير السلامة والكفاءة.</p>
+            <p>نسعى دائمًا لبناء شراكات طويلة الأمد مع عملائنا من خلال خدمة احترافية، وأسعار تنافسية، وسرعة في تلبية الطلبات، إيمانًا منا بأن الثقة والجودة هما أساس النجاح والاستمرارية.</p>
+        </div>
+    `,
+    contact: () => `
+        <div class="page-header">
+            <div class="container">
+                <h1>اتصل بنا</h1>
+            </div>
+        </div>
+        <div class="content-section">
+            <div class="contact-wrap">
+                <div class="contact-info-block">
+                    <h2>معلومات التواصل</h2>
+                    <p style="margin-bottom: 30px; color: var(--text-light);">يسعدنا تواصلكم معنا في أي وقت للرد على استفساراتكم وتلبية طلباتكم.</p>
+                    
+                    <div class="contact-info-item">
+                        <div class="contact-info-icon"><i class="fas fa-map-marker-alt"></i></div>
+                        <div class="contact-info-text">
+                            <h3>العنوان</h3>
+                            <p>أكتوبر - الحصري - المحور المركزي - متفرع من بزار الجامعة ومول الهدير - برج 4</p>
+                        </div>
+                    </div>
+                    
+                    <div class="contact-info-item">
+                        <div class="contact-info-icon"><i class="fas fa-phone"></i></div>
+                        <div class="contact-info-text">
+                            <h3>أرقام الهاتف</h3>
+                            <p>01018683910</p>
+                            <p>01022431542</p>
+                        </div>
+                    </div>
+                    
+                    <div class="contact-info-item">
+                        <div class="contact-info-icon"><i class="fab fa-facebook-f"></i></div>
+                        <div class="contact-info-text">
+                            <h3>صفحتنا على فيسبوك</h3>
+                            <p><a href="https://www.facebook.com/share/183DpsGvVx/" target="_blank" style="color: var(--primary-color);">العاصمة الطبية</a></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `,
+    policy: () => `
+        <div class="page-header">
+            <div class="container">
+                <h1>سياسة البيع</h1>
+            </div>
+        </div>
+        <div class="content-section">
+            <h2 style="color: var(--primary-color); margin-bottom: 20px;">سياسة البيع والاسترجاع</h2>
+            <p>نحرص في العاصمة الطبية على راحة عملائنا وثقتهم. نظرا لطبيعة المنتجات الطبية ومستحضرات التجميل، نطبق السياسات التالية:</p>
+            <ul>
+                <li style="margin-bottom: 10px;">- <strong>جودة المنتجات:</strong> نضمن أن جميع منتجاتنا مطابقة للمواصفات وصالحة للاستخدام.</li>
+                <li style="margin-bottom: 10px;">- <strong>تأكيد الطلب:</strong> يتم التأكيد عبر الهاتف أو الواتساب قبل شحن الأوردر.</li>
+                <li style="margin-bottom: 10px;">- <strong>الوقت المستغرق:</strong> يتم التوصيل في أسرع وقت وفقا للمنطقة.</li>
+                <li style="margin-bottom: 10px;">- <strong>الاسترجاع والاستبدال:</strong> لا يتم استرجاع المستلزمات الطبية المفتوحة حفاظا على الصحة العامة. يمكن استبدال المنتجات التالفة بسبب الشحن في غضون 24 ساعة من الاستلام.</li>
+            </ul>
+        </div>
+    `,
+    admin: () => {
+        if (!state.isAdminAuth) {
+            return `
+                <div class="container" style="padding: 100px 0; text-align: center;">
+                    <h2>غير مصرح لك بدخول هذه الصفحة</h2>
+                    <button class="btn btn-primary" onclick="window.location.hash=''; renderView('home');">العودة للرئيسية</button>
+                </div>
+            `;
+        }
+        return `
+            <div class="admin-container">
+                <div class="admin-sidebar">
+                    <h2>لوحة التحكم</h2>
+                    <ul class="admin-menu">
+                        <li class="active" onclick="switchAdminPanel('products', event)"><i class="fas fa-box"></i> إدارة المنتجات</li>
+                        <li onclick="switchAdminPanel('categories', event)"><i class="fas fa-tags"></i> إدارة الأقسام</li>
+                        <li onclick="logoutAdmin()"><i class="fas fa-sign-out-alt"></i> تسجيل خروج</li>
+                    </ul>
+                </div>
+                <div class="admin-content">
+                    <!-- Products Panel -->
+                    <div id="panel-products" class="admin-panel active">
+                        <div class="admin-header">
+                            <h3>المنتجات (${state.products.length})</h3>
+                            <button class="btn btn-primary" onclick="openProductModal()"><i class="fas fa-plus"></i> إضافة منتج</button>
+                        </div>
+                        <div style="overflow-x: auto;">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>الصورة</th>
+                                        <th>الاسم</th>
+                                        <th>السعر</th>
+                                        <th>القسم</th>
+                                        <th>الحالة</th>
+                                        <th>عرض</th>
+                                        <th>إجراءات</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${state.products.map(p => {
+            const cat = state.categories.find(c => c.id === p.categoryId);
+            return `
+                                        <tr>
+                                            <td><img src="${p.image}" alt=""></td>
+                                            <td>${p.name}</td>
+                                            <td>${p.price} ج</td>
+                                            <td>${cat ? cat.name : '-'}</td>
+                                            <td>${p.inStock ? '<span style="color:green;">متوفر</span>' : '<span style="color:red;">غير متوفر</span>'}</td>
+                                            <td>${p.isOffer ? '<span style="color:orange;">نعم</span>' : 'لا'}</td>
+                                            <td class="action-btns">
+                                                <button class="btn btn-secondary" onclick="editProduct('${p.id}')">تعديل</button>
+                                                <button class="btn" style="background-color: #e74c3c; color: white;" onclick="deleteProduct('${p.id}')">حذف</button>
+                                            </td>
+                                        </tr>`;
+        }).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <!-- Categories Panel -->
+                    <div id="panel-categories" class="admin-panel">
+                        <div class="admin-header">
+                            <h3>الأقسام (${state.categories.length})</h3>
+                            <form id="addCategoryForm" style="display: flex; gap: 10px;">
+                                <input type="text" id="newCategoryName" placeholder="اسم القسم الجديد" required style="padding: 10px; border: 1px solid #ccc; border-radius: 4px;">
+                                <button type="submit" class="btn btn-primary">إضافة</button>
+                            </form>
+                        </div>
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>الصورة</th>
+                                    <th>الاسم</th>
+                                    <th>الإجراءات</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${state.categories.map(c => `
+                                    <tr>
+                                        <td><img src="${c.image || ''}" alt="" style="width:50px; height:50px; object-fit:cover; border-radius:4px;"></td>
+                                        <td>${c.name}</td>
+                                        <td class="action-btns">
+                                            <button class="btn btn-secondary" onclick="editCategory('${c.id}')">تعديل</button>
+                                            <button class="btn" style="background-color: #e74c3c; color: white;" onclick="deleteCategory('${c.id}')">حذف</button>
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+};
+
+window.openProductModalWithCat = function (catId) {
+    openProductModal();
+    if (document.getElementById('adminProdCat')) {
+        document.getElementById('adminProdCat').value = catId;
+    }
+}
+
+window.deleteProductFromGrid = function (id, catId) {
+    if (confirm('هل أنت متأكد من حذف هذا المنتج؟')) {
+        state.products = state.products.filter(p => p.id !== id);
+        state.cart = state.cart.filter(item => item.product.id !== id);
+        saveData();
+        updateCartUI();
+        if (state.currentView === 'category') {
+            renderView('category', catId);
+        } else {
+            renderView(state.currentView);
+        }
+    }
+}
+
+function renderProductsGrid(productsList) {
+    return productsList.map(p => {
+        const cat = state.categories.find(c => c.id === p.categoryId);
+        return `
+            <div class="product-card">
+                ${p.isOffer ? `<span class="product-badge">عرض</span>` : ''}
+                <div class="product-img" onclick="navigateTo('product', '${p.id}')">
+                    <img src="${p.image}" alt="${p.name}">
+                </div>
+                <div class="product-info">
+                    <span class="product-category">${cat ? cat.name : ''}</span>
+                    <h3 class="product-title" onclick="navigateTo('product', '${p.id}')">${p.name}</h3>
+                    <div class="product-price">
+                        ${p.price} ج
+                        ${p.oldPrice ? `<span class="old-price">${p.oldPrice} ج</span>` : ''}
+                    </div>
+                    <div class="product-action">
+                        <button class="btn btn-primary btn-block" onclick="addToCart('${p.id}', 1)" ${!p.inStock ? 'disabled style="opacity:0.6"' : ''}>
+                            <i class="fas fa-cart-plus"></i> ${p.inStock ? 'إضافة للعربة' : 'غير متوفر'}
+                        </button>
+                    </div>
+                    
+                    ${state.isAdminAuth ? `
+                        <div style="display:flex; gap:10px; margin-top:15px; border-top: 1px solid #eee; padding-top: 10px;">
+                            <button class="btn btn-secondary" style="flex:1; padding:5px; font-size:14px;" onclick="editProduct('${p.id}')"><i class="fas fa-edit"></i> تعديل</button>
+                            <button class="btn" style="flex:1; padding:5px; font-size:14px; background-color: #e74c3c; color: white;" onclick="deleteProductFromGrid('${p.id}', '${p.categoryId}')"><i class="fas fa-trash"></i> مسح</button>
+                        </div>
+                    ` : ''}
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+function initNavigation() {
+    document.querySelectorAll('[data-view]').forEach(el => {
+        el.addEventListener('click', (e) => {
+            e.preventDefault();
+            const view = el.getAttribute('data-view');
+            const catId = el.getAttribute('data-cat-id');
+            const prodId = el.getAttribute('data-prod-id');
+
+            // Update active state in nav
+            document.querySelectorAll('.nav-list a').forEach(nav => nav.classList.remove('active'));
+            if (el.classList.contains('nav-list-item') || el.closest('.nav-list')) {
+                const targetNav = document.querySelector(`.nav-list a[data-view="${view}"]${catId ? `[data-cat-id="${catId}"]` : ''}`);
+                if (targetNav) targetNav.classList.add('active');
+            } else if (view === 'home') {
+                document.querySelector('.nav-list a[data-view="home"]').classList.add('active');
+            }
+
+            navigateTo(view, catId || prodId);
+        });
+    });
+
+    // Mobile menu
+    document.getElementById('mobileMenuBtn').addEventListener('click', () => {
+        document.getElementById('mainNav').classList.toggle('active');
+    });
+}
+
+function navigateTo(view, param = null) {
+    state.currentView = view;
+    state.currentParam = param;
+    renderView(view, param);
+    document.getElementById('mainNav').classList.remove('active'); // close mobile menu on nav
+    window.scrollTo(0, 0);
+
+    // Update footer auth UI
+    if (state.isAdminAuth) {
+        document.getElementById('showAdminLoginBtn').style.display = 'none';
+        document.getElementById('logoutAdminBtnFoot').style.display = 'inline-block';
+    } else {
+        document.getElementById('showAdminLoginBtn').style.display = 'inline-block';
+        document.getElementById('logoutAdminBtnFoot').style.display = 'none';
+    }
+}
+
+function renderView(view, param = null) {
+    if (views[view]) {
+        appContent.innerHTML = views[view](param);
+    } else {
+        appContent.innerHTML = `<div class="container" style="padding: 100px 0; text-align:center;"><h2>الصفحة غير موجودة</h2></div>`;
+    }
+}
+
+// Global helper for detail page
+window.updateQtyInput = function (change) {
+    const input = document.getElementById('detailQty');
+    if (input) {
+        let val = parseInt(input.value) + change;
+        if (val < 1) val = 1;
+        input.value = val;
+    }
+}
+
+function renderFooterCategories() {
+    const fc = document.getElementById('footer-categories');
+    fc.innerHTML = state.categories.slice(0, 5).map(c => `
+        <li><a href="#" data-view="category" data-cat-id="${c.id}">${c.name}</a></li>
+    `).join('');
+    // re-attach events for footer
+    fc.querySelectorAll('[data-view]').forEach(el => {
+        el.addEventListener('click', (e) => {
+            e.preventDefault();
+            navigateTo(el.getAttribute('data-view'), el.getAttribute('data-cat-id'));
+        });
+    });
+}
+
+// --- Cart System --- //
+function initCart() {
+    updateCartUI();
+
+    document.getElementById('openCartBtn').addEventListener('click', () => {
+        document.getElementById('cartModal').classList.add('active');
+    });
+
+    document.getElementById('closeCartModal').addEventListener('click', () => {
+        document.getElementById('cartModal').classList.remove('active');
+    });
+
+    document.getElementById('checkoutForm').addEventListener('submit', (e) => {
+        e.preventDefault();
+        submitOrder();
+    });
+}
+
+window.addToCart = function (productId, qty = 1) {
+    const product = state.products.find(p => p.id === productId);
+    if (!product || !product.inStock) return;
+
+    const existingItem = state.cart.find(item => item.product.id === productId);
+    if (existingItem) {
+        existingItem.qty += qty;
+    } else {
+        state.cart.push({ product, qty });
+    }
+
+    saveData();
+    updateCartUI();
+
+    // Simple visual feedback
+    const badge = document.getElementById('cartBadge');
+    badge.style.transform = 'scale(1.5)';
+    setTimeout(() => badge.style.transform = 'scale(1)', 200);
+}
+
+window.removeFromCart = function (index) {
+    state.cart.splice(index, 1);
+    saveData();
+    updateCartUI();
+}
+
+function updateCartUI() {
+    const badge = document.getElementById('cartBadge');
+    const itemsContainer = document.getElementById('cartItems');
+    const totalEl = document.getElementById('cartTotal');
+    const checkoutForm = document.getElementById('checkoutForm');
+
+    // Update Badge
+    const totalItems = state.cart.reduce((sum, item) => sum + item.qty, 0);
+    badge.innerText = totalItems;
+
+    if (state.cart.length === 0) {
+        itemsContainer.innerHTML = '<p style="text-align:center; padding: 20px;">عربة التسوق فارغة</p>';
+        totalEl.innerText = '0';
+        checkoutForm.style.display = 'none';
+        return;
+    }
+
+    checkoutForm.style.display = 'block';
+    let total = 0;
+
+    itemsContainer.innerHTML = state.cart.map((item, index) => {
+        const itemTotal = item.product.price * item.qty;
+        total += itemTotal;
+        return `
+            <div class="cart-item">
+                <img src="${item.product.image}" alt="${item.product.name}" class="cart-item-img">
+                <div class="cart-item-info">
+                    <div class="cart-item-title">${item.product.name}</div>
+                    <div style="font-size: 13px; color: #777;">الكمية: ${item.qty}</div>
+                    <div class="cart-item-price">${itemTotal} ج</div>
+                </div>
+                <div class="cart-item-controls">
+                    <button class="remove-item" onclick="removeFromCart(${index})"><i class="fas fa-trash"></i></button>
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    totalEl.innerText = total;
+}
+
+function submitOrder() {
+    const name = document.getElementById('customerName').value;
+    const phone = document.getElementById('customerPhone').value;
+
+    if (state.cart.length === 0) return;
+
+    let total = 0;
+    let message = `مرحبا، أرغب في طلب المنتجات التالية من موقع العاصمة الطبية:\n\n`;
+
+    state.cart.forEach(item => {
+        const itemTotal = item.product.price * item.qty;
+        total += itemTotal;
+        message += `- ${item.product.name} × ${item.qty} = ${itemTotal} جنيه\n`;
+    });
+
+    message += `\nTotal Price: ${total} جنيه\n\n`;
+    message += `Customer Name: ${name}\n`;
+    message += `Customer Phone: ${phone}\n\n`;
+    message += `Thank you.`;
+
+    const encodedMessage = encodeURIComponent(message);
+    const whatsappNum = "01018683910"; // Default number
+    const whatsappUrl = `https://wa.me/2${whatsappNum}?text=${encodedMessage}`;
+
+    window.open(whatsappUrl, '_blank');
+
+    // Clear cart after order
+    state.cart = [];
+    saveData();
+    updateCartUI();
+    document.getElementById('cartModal').classList.remove('active');
+}
+
+// --- Search System --- //
+function initSearch() {
+    const input = document.getElementById('searchInput');
+    const resultsArea = document.getElementById('searchResults');
+
+    input.addEventListener('input', (e) => {
+        const query = e.target.value.trim().toLowerCase();
+        if (query.length < 2) {
+            resultsArea.classList.remove('active');
+            return;
+        }
+
+        const results = state.products.filter(p => p.name.toLowerCase().includes(query));
+
+        if (results.length > 0) {
+            resultsArea.innerHTML = results.map(p => `
+                <div class="search-item" onclick="document.getElementById('searchResults').classList.remove('active'); document.getElementById('searchInput').value=''; navigateTo('product', '${p.id}')">
+                    <img src="${p.image}" alt="">
+                    <span>${p.name}</span>
+                </div>
+            `).join('');
+            resultsArea.classList.add('active');
+        } else {
+            resultsArea.innerHTML = '<div style="padding:10px;text-align:center;">لا توجد نتائج</div>';
+            resultsArea.classList.add('active');
+        }
+    });
+
+    // Hide search when clicking outside
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('.search-bar')) {
+            resultsArea.classList.remove('active');
+        }
+    });
+}
+
+// --- Admin System --- //
+function initAdmin() {
+    let clickCount = 0;
+    let clickTimer;
+
+    // Fallback for mobile: clicking the footer logo 5 times within 2 seconds
+    const footerLogo = document.querySelector('.footer-logo');
+    if (footerLogo) {
+        footerLogo.addEventListener('click', () => {
+            clickCount++;
+            clearTimeout(clickTimer);
+            clickTimer = setTimeout(() => { clickCount = 0; }, 2000);
+
+            if (clickCount >= 5) {
+                const code = prompt("أدخل الرمز السري:");
+                if (code === '1357') {
+                    state.isAdminAuth = true;
+                    sessionStorage.setItem('mc_admin_auth', 'true');
+                    navigateTo('admin');
+                } else if (code) {
+                    alert('رمز الدخول غير صحيح');
+                }
+                clickCount = 0;
+            }
+        });
+    }
+
+    // Hidden admin trigger: typing "1357" anywhere
+    window.addEventListener('keydown', (e) => {
+        if (e.key >= '0' && e.key <= '9') {
+            state.adminKeys += e.key;
+            if (state.adminKeys.length > 4) {
+                state.adminKeys = state.adminKeys.substring(1);
+            }
+            if (state.adminKeys === '1357') {
+                if (state.isAdminAuth) {
+                    navigateTo('admin');
+                } else {
+                    document.getElementById('adminLoginModal').classList.add('active');
+                    document.getElementById('adminCode').value = '';
+                }
+                state.adminKeys = ''; // reset
+            }
+        } else {
+            state.adminKeys = ''; // reset on any other key
+        }
+    });
+
+    document.getElementById('adminLoginForm').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const codeInput = document.getElementById('adminCode');
+        if (codeInput.value === '1357') {
+            document.getElementById('adminLoginModal').classList.remove('active');
+            state.isAdminAuth = true;
+            sessionStorage.setItem('mc_admin_auth', 'true');
+            // Navigate to admin initially, but allow them to stay on current page if triggered from specific view
+            navigateTo('admin');
+            codeInput.value = ''; // clear
+        } else {
+            alert('رمز الدخول غير صحيح');
+            codeInput.value = '';
+        }
+    });
+
+    // Footer explicit buttons
+    document.getElementById('showAdminLoginBtn').addEventListener('click', () => {
+        document.getElementById('adminLoginModal').classList.add('active');
+        document.getElementById('adminCode').value = '';
+    });
+
+    document.getElementById('logoutAdminBtnFoot').addEventListener('click', () => {
+        logoutAdmin();
+    });
+}
+
+window.logoutAdmin = function () {
+    state.isAdminAuth = false;
+    sessionStorage.removeItem('mc_admin_auth');
+    navigateTo('home');
+}
+
+window.switchAdminPanel = function (panel, event) {
+    document.querySelectorAll('.admin-panel').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.admin-menu li').forEach(el => el.classList.remove('active'));
+
+    document.getElementById(`panel-${panel}`).classList.add('active');
+
+    if (event && event.currentTarget) {
+        event.currentTarget.classList.add('active');
+    } else {
+        const panels = ['products', 'categories'];
+        const index = panels.indexOf(panel);
+        if (index >= 0) {
+            const menuItems = document.querySelectorAll('.admin-menu li');
+            if (menuItems[index]) menuItems[index].classList.add('active');
+        }
+    }
+}
+
+function setupAdminListeners() {
+    window.previewImage = function (event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function (e) {
+            document.getElementById('adminProdImgData').value = e.target.result;
+            const preview = document.getElementById('imgPreview');
+            preview.src = e.target.result;
+            preview.style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+    };
+
+    const prodForm = document.getElementById('productForm');
+    if (prodForm) {
+        prodForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+
+            const id = document.getElementById('adminProdId').value || 'p_' + Date.now();
+            const product = {
+                id: id,
+                name: document.getElementById('adminProdName').value,
+                price: parseFloat(document.getElementById('adminProdPrice').value),
+                oldPrice: document.getElementById('adminProdOldPrice').value ? parseFloat(document.getElementById('adminProdOldPrice').value) : null,
+                categoryId: document.getElementById('adminProdCat').value,
+                image: document.getElementById('adminProdImgData').value,
+                description: document.getElementById('adminProdDesc').value,
+                inStock: document.getElementById('adminProdStock').checked,
+                isOffer: document.getElementById('adminProdOffer').checked
+            };
+
+            const existingIdx = state.products.findIndex(p => p.id === id);
+            if (existingIdx >= 0) {
+                state.products[existingIdx] = product;
+            } else {
+                state.products.push(product);
+            }
+
+            saveData();
+            document.getElementById('productModal').classList.remove('active');
+            renderView(state.currentView, state.currentParam);
+        });
+    }
+
+    const catForm = document.getElementById('addCategoryForm');
+    if (catForm) {
+        catForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const name = document.getElementById('newCategoryName').value;
+            const newCat = {
+                id: 'c_' + Date.now(),
+                name: name
+            };
+            state.categories.push(newCat);
+            saveData();
+            renderFooterCategories();
+            renderView('admin'); // Re-render to show updated tables
+
+            // Re-switch to categories panel since renderView defaults to Products panel visually in HTML structure
+            if (state.currentView === 'admin') {
+                setTimeout(() => {
+                    document.querySelectorAll('.admin-menu li')[1].click();
+                }, 0);
+            }
+        });
+    }
+}
+
+window.openProductModal = function () {
+    document.getElementById('productForm').reset();
+    document.getElementById('adminProdId').value = '';
+    document.getElementById('adminProdImgData').value = '';
+    document.getElementById('imgPreview').style.display = 'none';
+
+    // Populate categories
+    const catSelect = document.getElementById('adminProdCat');
+    if (catSelect) {
+        catSelect.innerHTML = state.categories.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+    }
+
+    document.getElementById('productModalTitle').innerText = 'إضافة منتج';
+    document.getElementById('productModal').classList.add('active');
+}
+
+window.editProduct = function (id) {
+    const p = state.products.find(x => x.id === id);
+    if (!p) return;
+
+    document.getElementById('adminProdId').value = p.id;
+    document.getElementById('adminProdName').value = p.name;
+    document.getElementById('adminProdPrice').value = p.price;
+    document.getElementById('adminProdOldPrice').value = p.oldPrice || '';
+
+    // Populate categories before setting value
+    const catSelect = document.getElementById('adminProdCat');
+    if (catSelect) {
+        catSelect.innerHTML = state.categories.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+    }
+
+    document.getElementById('adminProdCat').value = p.categoryId;
+    document.getElementById('adminProdImgData').value = p.image;
+
+    // update preview
+    const preview = document.getElementById('imgPreview');
+    preview.src = p.image;
+    preview.style.display = 'block';
+
+    document.getElementById('adminProdDesc').value = p.description || '';
+    document.getElementById('adminProdStock').checked = p.inStock;
+    document.getElementById('adminProdOffer').checked = p.isOffer;
+
+    document.getElementById('productModalTitle').innerText = 'تعديل منتج';
+    document.getElementById('productModal').classList.add('active');
+}
+
+window.deleteProduct = function (id) {
+    if (confirm('هل أنت متأكد من حذف هذا المنتج؟')) {
+        state.products = state.products.filter(p => p.id !== id);
+        // Also remove from cart if present
+        state.cart = state.cart.filter(item => item.product.id !== id);
+        saveData();
+        updateCartUI();
+        if (state.currentView === 'admin') {
+            renderView('admin');
+        } else {
+            renderView(state.currentView, state.currentParam);
+        }
+    }
+}
+
+window.editCategory = function (id) {
+    const c = state.categories.find(x => x.id === id);
+    if (!c) return;
+
+    const newName = prompt('اسم القسم الجديد:', c.name);
+    if (newName === null) return;
+
+    const newImage = prompt('رابط صورة القسم (اختياري):', c.image || '');
+
+    if (newName.trim() !== '') {
+        c.name = newName.trim();
+        if (newImage !== null) {
+            c.image = newImage.trim();
+        }
+
+        saveData();
+        renderFooterCategories();
+
+        if (state.currentView === 'admin') {
+            renderView('admin');
+            setTimeout(() => {
+                if (document.querySelectorAll('.admin-menu li')[1]) {
+                    document.querySelectorAll('.admin-menu li')[1].click();
+                }
+            }, 0);
+        } else {
+            renderView(state.currentView, state.currentParam);
+        }
+    }
+}
+
+window.deleteCategory = function (id) {
+    // Check if products exist in this category
+    const hasProducts = state.products.some(p => p.categoryId === id);
+    if (hasProducts) {
+        alert('لا يمكن حذف قسم يحتوي على منتجات. يرجى نقل أو حذف المنتجات أولاً.');
+        return;
+    }
+
+    if (confirm('هل أنت متأكد من حذف هذا القسم؟')) {
+        state.categories = state.categories.filter(c => c.id !== id);
+        saveData();
+        renderFooterCategories();
+        renderView('admin');
+        setTimeout(() => {
+            document.querySelectorAll('.admin-menu li')[1].click();
+        }, 0);
+    }
+}

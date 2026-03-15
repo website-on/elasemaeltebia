@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>العاصمة الطبية - Medical Capital</title>
+    <meta name="description"
+        content="العاصمة الطبية شركة متخصصة في توريد المستلزمات الطبية ومستحضرات التجميل والمستلزمات الرياضية ومستلزمات سلامة الغذاء.">
+    <!-- Google Fonts: Cairo -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <!-- Top Bar -->
+    <div class="top-bar">
+        <div class="container top-bar-content">
+            <div class="contact-info">
+                <a href="tel:01018683910"><i class="fas fa-phone"></i> 01018683910</a>
+                <a href="tel:01022431542"><i class="fas fa-phone"></i> 01022431542</a>
+            </div>
+            <div class="social-info">
+                <a href="https://www.facebook.com/share/183DpsGvVx/" target="_blank"><i
+                        class="fab fa-facebook-f"></i></a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Header / Navbar -->
+    <header class="header">
+        <div class="container header-content">
+            <a href="#" class="logo" id="logo" data-view="home">العاصمة <span>الطبية</span></a>
+
+            <div class="search-bar">
+                <input type="text" id="searchInput" placeholder="ابحث عن المنتجات...">
+                <button type="button" id="searchBtn"><i class="fas fa-search"></i></button>
+                <div id="searchResults" class="search-results"></div>
+            </div>
+
+            <div class="header-actions">
+                <button class="cart-btn" id="openCartBtn">
+                    <i class="fas fa-shopping-cart"></i>
+                    <span class="cart-badge" id="cartBadge">0</span>
+                </button>
+                <button class="mobile-menu-btn" id="mobileMenuBtn">
+                    <i class="fas fa-bars"></i>
+                </button>
+            </div>
+        </div>
+        <nav class="main-nav" id="mainNav">
+            <div class="container">
+                <ul class="nav-list">
+                    <li><a href="#" data-view="home" class="active">الرئيسية</a></li>
+                    <li><a href="#" data-view="category" data-cat-id="1">مستلزمات طبية</a></li>
+                    <li><a href="#" data-view="category" data-cat-id="2">مستحضرات تجميل</a></li>
+                    <li><a href="#" data-view="category" data-cat-id="3">مستلزمات سلامة الغذاء</a></li>
+                    <li><a href="#" data-view="offers">العروض</a></li>
+                    <li><a href="#" data-view="about">من نحن</a></li>
+                    <li><a href="#" data-view="contact">اتصل بنا</a></li>
+                    <li><a href="#" data-view="policy">سياسة البيع</a></li>
+                </ul>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Main Content Area -->
+    <main id="app-content">
+        <!-- Views will be injected here by app.js -->
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container footer-content">
+            <div class="footer-col">
+                <h3 class="footer-logo">العاصمة <span>الطبية</span></h3>
+                <p>شركة متخصصة في توريد المستلزمات الطبية ومستحضرات التجميل والمستلزمات الرياضية ومستلزمات سلامة الغذاء،
+                    بالإضافة إلى تجهيز العيادات وتوفير لوازم الصيدليات.</p>
+                <div class="social-links">
+                    <a href="https://www.facebook.com/share/183DpsGvVx/" target="_blank"><i
+                            class="fab fa-facebook-f"></i></a>
+                </div>
+            </div>
+            <div class="footer-col">
+                <h3>روابط هامة</h3>
+                <ul>
+                    <li><a href="#" data-view="home">الرئيسية</a></li>
+                    <li><a href="#" data-view="about">من نحن</a></li>
+                    <li><a href="#" data-view="policy">سياسة البيع</a></li>
+                    <li><a href="#" data-view="contact">اتصل بنا</a></li>
+                </ul>
+            </div>
+            <div class="footer-col">
+                <h3>أقسام المنتجات</h3>
+                <ul id="footer-categories">
+                    <!-- Categories injected here -->
+                </ul>
+            </div>
+            <div class="footer-col">
+                <h3>تواصل معنا</h3>
+                <ul class="contact-list">
+                    <li><i class="fas fa-map-marker-alt"></i> أكتوبر - الحصري - المحور المركزي - متفرع من بزار الجامعة
+                        ومول الهدير - برج 4</li>
+                    <li><i class="fas fa-phone"></i> 01018683910</li>
+                    <li><i class="fas fa-phone"></i> 01022431542</li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <div class="container"
+                style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
+                <p>&copy; 2026 العاصمة الطبية. جميع الحقوق محفوظة.</p>
+                <div style="margin-top: 10px;">
+                    <button id="showAdminLoginBtn"
+                        style="background:none; border:none; color:var(--text-light); cursor:pointer; font-size:14px; transition:color 0.3s;"><i
+                            class="fas fa-lock"></i> تسجيل الإدارة</button>
+                    <button id="logoutAdminBtnFoot"
+                        style="display:none; background:none; border:none; color:#e74c3c; cursor:pointer; font-size:14px; margin-right:15px; transition:color 0.3s;"><i
+                            class="fas fa-sign-out-alt"></i> خروج</button>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Cart Modal -->
+    <div class="modal" id="cartModal">
+        <div class="modal-content cart-modal">
+            <span class="close-modal" id="closeCartModal">&times;</span>
+            <h2>عربة التسوق</h2>
+            <div class="cart-items" id="cartItems">
+                <!-- Cart items injected here -->
+            </div>
+            <div class="cart-summary">
+                <div class="total">الإجمالي: <span id="cartTotal">0</span> جنيه</div>
+
+                <form id="checkoutForm" class="checkout-form">
+                    <h3>بيانات الطلب</h3>
+                    <div class="form-group">
+                        <label for="customerName">الاسم:</label>
+                        <input type="text" id="customerName" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="customerPhone">رقم الهاتف:</label>
+                        <input type="tel" id="customerPhone" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-block">تأكيد الطلب عبر واتساب <i
+                            class="fab fa-whatsapp"></i></button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Login Modal -->
+    <div class="modal" id="adminLoginModal">
+        <div class="modal-content auth-modal">
+            <span class="close-modal" aria-label="Close"
+                onclick="document.getElementById('adminLoginModal').classList.remove('active')">&times;</span>
+            <h2>تسجيل دخول الإدارة</h2>
+            <form id="adminLoginForm">
+                <div class="form-group">
+                    <label>رمز الدخول</label>
+                    <input type="password" id="adminCode" required>
+                </div>
+                <button type="submit" class="btn btn-primary btn-block">دخول</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Product Modal HTML (Global for Admin) -->
+    <div class="modal" id="productModal">
+        <div class="modal-content">
+            <span class="close-modal"
+                onclick="document.getElementById('productModal').classList.remove('active')">&times;</span>
+            <h2 id="productModalTitle">إضافة منتج</h2>
+            <form id="productForm">
+                <input type="hidden" id="adminProdId">
+                <div class="form-group">
+                    <label>الاسم</label>
+                    <input type="text" id="adminProdName" required>
+                </div>
+                <div class="form-group" style="display:flex; gap:15px;">
+                    <div style="flex:1;">
+                        <label>السعر</label>
+                        <input type="number" id="adminProdPrice" required>
+                    </div>
+                    <div style="flex:1;">
+                        <label>السعر القديم (اختياري)</label>
+                        <input type="number" id="adminProdOldPrice">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>القسم</label>
+                    <select id="adminProdCat" required>
+                        <!-- Options injected by JS -->
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>صورة المنتج</label>
+                    <input type="file" id="adminProdImgFile" accept="image/*" onchange="previewImage(event)">
+                    <input type="hidden" id="adminProdImgData" required>
+                    <img id="imgPreview"
+                        style="display:none; margin-top:10px; max-width:100px; border-radius:4px; border:1px solid #ccc;">
+                </div>
+                <div class="form-group">
+                    <label>الوصف</label>
+                    <textarea id="adminProdDesc"></textarea>
+                </div>
+                <div class="form-group" style="display:flex; gap:20px;">
+                    <label style="display:flex; align-items:center; gap:5px;">
+                        <input type="checkbox" id="adminProdStock" checked> متوفر بالمخزون
+                    </label>
+                    <label style="display:flex; align-items:center; gap:5px;">
+                        <input type="checkbox" id="adminProdOffer"> عرض خاص
+                    </label>
+                </div>
+                <button type="submit" class="btn btn-primary btn-block">حفظ المنتج</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Floating Social Icons -->
+    <div class="floating-social">
+        <a href="https://wa.me/201018683910" target="_blank" class="float-wp"><i class="fab fa-whatsapp"></i></a>
+        <a href="https://www.facebook.com/share/183DpsGvVx/" target="_blank" class="float-fb"><i
+                class="fab fa-facebook-f"></i></a>
+    </div>
+
+    <!-- Scripts -->
+    <script src="app.js"></script>
+</body>
+
+</html>
