@@ -2,6 +2,8 @@ const firebaseConfig = {
     apiKey: "AIzaSyDKRNpFCvTxV0da-rp9OJB0hO1lbs8vnZw",
     authDomain: "elasemaeltbia.firebaseapp.com",
     projectId: "elasemaeltbia",
+    // ⚠️ مهم: لجعل المنتجات تظهر للجميع يجب تفعيل Realtime Database ووضع الدومين الخاص بها هنا
+    databaseURL: "https://elasemaeltbia-default-rtdb.firebaseio.com",
     storageBucket: "elasemaeltbia.firebasestorage.app",
     messagingSenderId: "342333643282",
     appId: "1:342333643282:web:1bfe62f00e81ce601816cb"
