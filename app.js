@@ -135,15 +135,41 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     patchCategoriesWithImages();
-
     initNavigation();
     initCart();
     initSearch();
     initAdmin();
     setupAdminListeners();
     renderFooterCategories();
-    renderView(state.currentView, state.currentParam);
+
+    // Handle initial route from URL
+    handleUrlRoute();
 });
+
+window.addEventListener('popstate', (e) => {
+    handleUrlRoute();
+});
+
+function handleUrlRoute() {
+    const params = new URLSearchParams(window.location.search);
+    const view = params.get('view') || 'home';
+    const id = params.get('id') || null;
+    state.currentView = view;
+    state.currentParam = id;
+    renderView(view, id);
+
+    // Update active state in nav
+    document.querySelectorAll('.nav-list a').forEach(nav => nav.classList.remove('active'));
+    let selector = `.nav-list a[data-view="${view}"]`;
+    if (id && view === 'category') selector += `[data-cat-id="${id}"]`;
+    const targetNav = document.querySelector(selector);
+    if (targetNav) {
+        targetNav.classList.add('active');
+    } else if (view === 'home') {
+        const homeNav = document.querySelector('.nav-list a[data-view="home"]');
+        if (homeNav) homeNav.classList.add('active');
+    }
+}
 
 async function fetchInitialData() {
     try {
@@ -601,32 +627,47 @@ function initNavigation() {
             const view = el.getAttribute('data-view');
             const catId = el.getAttribute('data-cat-id');
             const prodId = el.getAttribute('data-prod-id');
-
-            // Update active state in nav
-            document.querySelectorAll('.nav-list a').forEach(nav => nav.classList.remove('active'));
-            if (el.classList.contains('nav-list-item') || el.closest('.nav-list')) {
-                const targetNav = document.querySelector(`.nav-list a[data-view="${view}"]${catId ? `[data-cat-id="${catId}"]` : ''}`);
-                if (targetNav) targetNav.classList.add('active');
-            } else if (view === 'home') {
-                const homeNav = document.querySelector('.nav-list a[data-view="home"]');
-                if (homeNav) homeNav.classList.add('active');
-            }
-
             navigateTo(view, catId || prodId);
         }
     });
 
     // Mobile menu
+    const mainNav = document.getElementById('mainNav');
+    const overlay = document.getElementById('mobileMenuOverlay');
+    const closeBtn = document.getElementById('closeMobileMenuBtn');
+
+    function closeMenu() {
+        mainNav.classList.remove('active');
+        overlay.classList.remove('active');
+        document.body.style.overflow = '';
+    }
+
     document.getElementById('mobileMenuBtn').addEventListener('click', () => {
-        document.getElementById('mainNav').classList.toggle('active');
+        mainNav.classList.add('active');
+        overlay.classList.add('active');
+        document.body.style.overflow = 'hidden';
     });
+
+    closeBtn.addEventListener('click', closeMenu);
+    overlay.addEventListener('click', closeMenu);
 }
 
 function navigateTo(view, param = null) {
-    state.currentView = view;
-    state.currentParam = param;
-    renderView(view, param);
-    document.getElementById('mainNav').classList.remove('active'); // close mobile menu on nav
+    if (state.currentView === view && state.currentParam === param) return;
+
+    // Use history API to allow back button
+    let url = '?view=' + view;
+    if (param) url += '&id=' + param;
+    history.pushState({ view, param }, '', url);
+
+    handleUrlRoute();
+
+    document.getElementById('mainNav').classList.remove('active');
+    if (document.getElementById('mobileMenuOverlay')) {
+        document.getElementById('mobileMenuOverlay').classList.remove('active');
+        document.body.style.overflow = '';
+    }
+
     window.scrollTo(0, 0);
 
     // Update footer auth UI
