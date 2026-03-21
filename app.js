@@ -328,24 +328,23 @@ const views = {
 
         subCats.forEach(sc => {
             const scProducts = catProducts.filter(p => p.subCategoryId === sc.id);
-            if (scProducts.length > 0) {
-                sectionsHTML += `
-                    <div style="margin-bottom: 40px;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                            <h3 class="section-title" style="margin-bottom: 0; font-size: 24px;">${sc.name}</h3>
-                            <div style="display:flex; gap: 10px; align-items:center;">
-                                <div class="scroll-arrows">
-                                    <button class="scroll-arrow right-arrow" onclick="scrollSection('sc-${sc.id}', -1)" title="السابق"><i class="fas fa-chevron-right"></i></button>
-                                    <button class="scroll-arrow left-arrow" onclick="scrollSection('sc-${sc.id}', 1)" title="التالي"><i class="fas fa-chevron-left"></i></button>
-                                </div>
+            sectionsHTML += `
+                <div style="margin-bottom: 40px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <h3 class="section-title" style="margin-bottom: 0; font-size: 24px;">${sc.name}</h3>
+                        ${state.isAdminAuth ? `<div style="display:inline-flex; gap: 5px; margin-right:15px;"><button style="background:none; border:none; cursor:pointer;" onclick="editSubCategory('${sc.id}')"><i class="fas fa-edit" style="color:var(--secondary-color)"></i></button><button style="background:none; border:none; cursor:pointer;" onclick="deleteSubCategory('${sc.id}')"><i class="fas fa-trash" style="color:red"></i></button></div>` : ''}
+                        <div style="display:flex; gap: 10px; align-items:center; margin-right: auto;">
+                            <div class="scroll-arrows">
+                                <button class="scroll-arrow right-arrow" onclick="scrollSection('sc-${sc.id}', -1)" title="السابق"><i class="fas fa-chevron-right"></i></button>
+                                <button class="scroll-arrow left-arrow" onclick="scrollSection('sc-${sc.id}', 1)" title="التالي"><i class="fas fa-chevron-left"></i></button>
                             </div>
                         </div>
-                        <div class="horizontal-scroll-wrapper" id="scroll-wrapper-sc-${sc.id}">
-                            ${renderProductsGrid(sortProductsList(scProducts))}
-                        </div>
                     </div>
-                `;
-            }
+                    <div class="horizontal-scroll-wrapper" id="scroll-wrapper-sc-${sc.id}">
+                        ${scProducts.length > 0 ? renderProductsGrid(sortProductsList(scProducts)) : '<p style="text-align:center; font-size:16px; width:100%; color:#777; padding:20px 0;">لا توجد منتجات في هذا التصنيف الداخلي حالياً.</p>'}
+                    </div>
+                </div>
+            `;
         });
 
         const otherProducts = catProducts.filter(p => !p.subCategoryId);
@@ -391,7 +390,7 @@ const views = {
                         </select>
                     </div>
                 </div>
-                ${catProducts.length > 0 ? sectionsHTML : `<p style="text-align:center; font-size:18px;">لا توجد منتجات في هذا القسم حاليا.</p>`}
+                ${(catProducts.length > 0 || subCats.length > 0) ? sectionsHTML : `<p style="text-align:center; font-size:18px;">لا توجد منتجات في هذا القسم حاليا.</p>`}
             </section>
         `;
     },
