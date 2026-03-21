@@ -107,6 +107,7 @@ function getSafeStorage(key, fallback) {
 
 let state = {
     categories: [],
+    subCategories: [],
     products: [],
     cart: getSafeStorage('mc_cart', []),
     currentView: 'home',
@@ -131,6 +132,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     } catch (e) {
         console.warn("Firebase fetch failed or timed out, falling back to local data:", e.message);
         state.categories = getSafeStorage('mc_categories', [...defaultCategories]);
+        state.subCategories = getSafeStorage('mc_subcategories', []);
         state.products = getSafeStorage('mc_products', [...defaultProducts]);
     }
 
@@ -189,6 +191,16 @@ async function fetchInitialData() {
                 await seedDatabase('categories', state.categories);
             }
 
+            // Format Subcategories
+            if (data.subCategories) {
+                state.subCategories = Object.keys(data.subCategories).map(key => ({
+                    id: key,
+                    ...data.subCategories[key]
+                }));
+            } else {
+                state.subCategories = [];
+            }
+
             // Format Products
             if (data.products) {
                 state.products = Object.keys(data.products).map(key => ({
@@ -202,6 +214,7 @@ async function fetchInitialData() {
         } else {
             // First time initialization
             state.categories = [...defaultCategories];
+            state.subCategories = [];
             state.products = [...defaultProducts];
             await seedDatabase('categories', state.categories);
             await seedDatabase('products', state.products);
@@ -244,6 +257,7 @@ function patchCategoriesWithImages() {
 function saveData() {
     // Always save locally to ensure site logic never breaks
     localStorage.setItem('mc_categories', JSON.stringify(state.categories));
+    localStorage.setItem('mc_subcategories', JSON.stringify(state.subCategories));
     localStorage.setItem('mc_products', JSON.stringify(state.products));
     localStorage.setItem('mc_cart', JSON.stringify(state.cart));
 }
@@ -264,28 +278,95 @@ async function syncToFirebase(action, pathStr, data = null) {
 const appContent = document.getElementById('app-content');
 
 const views = {
-    home: () => `
-        <section class="hero">
-            <div class="hero-content">
-                <h1 class="hero-title">العاصمة الطبية</h1>
-                <p class="hero-subtitle">شريكك الموثوق في المستلزمات الطبية ومستحضرات التجميل والسلامة</p>
-                <div style="display: flex; gap: 15px; justify-content: center;">
-                    <a href="#" class="btn btn-secondary" style="font-size: 18px; padding: 15px 30px;" data-view="category" data-cat-id="1">تسوق المستلزمات الطبية</a>
-                    <a href="#" class="btn btn-accent" style="font-size: 18px; padding: 15px 30px;" data-view="offers">شاهد أحدث العروض</a>
+    home: () => {
+        let sectionsHTML = '';
+        state.categories.forEach(cat => {
+            const catProducts = state.products.filter(p => p.categoryId === cat.id);
+            if (catProducts.length > 0) {
+                sectionsHTML += `
+                    <section class="products-section container">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                            <h2 class="section-title" style="margin-bottom: 0;">${cat.name}</h2>
+                            <div style="display:flex; gap: 10px; align-items:center;">
+                                <div class="scroll-arrows">
+                                    <button class="scroll-arrow right-arrow" onclick="scrollSection('${cat.id}', -1)" title="السابق"><i class="fas fa-chevron-right"></i></button>
+                                    <button class="scroll-arrow left-arrow" onclick="scrollSection('${cat.id}', 1)" title="التالي"><i class="fas fa-chevron-left"></i></button>
+                                </div>
+                                <a href="#" class="btn btn-outline" data-view="category" data-cat-id="${cat.id}" style="font-size: 14px; padding: 5px 15px;">عرض الكل</a>
+                            </div>
+                        </div>
+                        <div class="horizontal-scroll-wrapper" id="scroll-wrapper-${cat.id}">
+                            ${renderProductsGrid(sortProductsList(catProducts))}
+                        </div>
+                    </section>
+                `;
+            }
+        });
+
+
+        return `
+            <section class="hero">
+                <div class="hero-content">
+                    <h1 class="hero-title">العاصمة الطبية</h1>
+                    <p class="hero-subtitle">شريكك الموثوق في المستلزمات الطبية ومستحضرات التجميل والسلامة</p>
+                    <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
+                        <button class="btn btn-secondary" style="font-size: 18px; padding: 15px 30px;" data-view="category" data-cat-id="1">تسوق المستلزمات الطبية</button>
+                        <button class="btn btn-accent" style="font-size: 18px; padding: 15px 30px;" data-view="offers">شاهد أحدث العروض</button>
+                    </div>
                 </div>
-            </div>
-        </section>
-        <section class="products-section container">
-            <h2 class="section-title">المنتجات المميزة</h2>
-            <div class="product-grid">
-                ${renderProductsGrid(state.products.slice(0, 8))}
-            </div>
-        </section>
-    `,
+            </section>
+            ${sectionsHTML || '<div class="container" style="text-align:center; padding: 50px 0;"><p>لا توجد منتجات حالياً.</p></div>'}
+        `;
+    },
     category: (catId) => {
         const cat = state.categories.find(c => c.id === catId);
         const catProducts = state.products.filter(p => p.categoryId === catId);
         const catImage = cat && cat.image ? cat.image : 'https://images.unsplash.com/photo-1631549916768-4119b2e5f926?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80';
+
+        const subCats = state.subCategories.filter(sc => sc.categoryId === catId);
+        let sectionsHTML = '';
+
+        subCats.forEach(sc => {
+            const scProducts = catProducts.filter(p => p.subCategoryId === sc.id);
+            if (scProducts.length > 0) {
+                sectionsHTML += `
+                    <div style="margin-bottom: 40px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                            <h3 class="section-title" style="margin-bottom: 0; font-size: 24px;">${sc.name}</h3>
+                            <div style="display:flex; gap: 10px; align-items:center;">
+                                <div class="scroll-arrows">
+                                    <button class="scroll-arrow right-arrow" onclick="scrollSection('sc-${sc.id}', -1)" title="السابق"><i class="fas fa-chevron-right"></i></button>
+                                    <button class="scroll-arrow left-arrow" onclick="scrollSection('sc-${sc.id}', 1)" title="التالي"><i class="fas fa-chevron-left"></i></button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="horizontal-scroll-wrapper" id="scroll-wrapper-sc-${sc.id}">
+                            ${renderProductsGrid(sortProductsList(scProducts))}
+                        </div>
+                    </div>
+                `;
+            }
+        });
+
+        const otherProducts = catProducts.filter(p => !p.subCategoryId);
+        if (otherProducts.length > 0) {
+            sectionsHTML += `
+                <div style="margin-bottom: 40px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <h3 class="section-title" style="margin-bottom: 0; font-size: 24px;">${subCats.length > 0 ? 'منتجات العرض العام' : 'جميع المنتجات'}</h3>
+                        <div style="display:flex; gap: 10px; align-items:center;">
+                            <div class="scroll-arrows">
+                                <button class="scroll-arrow right-arrow" onclick="scrollSection('other-${catId}', -1)" title="السابق"><i class="fas fa-chevron-right"></i></button>
+                                <button class="scroll-arrow left-arrow" onclick="scrollSection('other-${catId}', 1)" title="التالي"><i class="fas fa-chevron-left"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="horizontal-scroll-wrapper" id="scroll-wrapper-other-${catId}">
+                        ${renderProductsGrid(sortProductsList(otherProducts))}
+                    </div>
+                </div>
+            `;
+        }
 
         return `
             <div class="category-header" style="background: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), url('${catImage}') center/cover; padding: 60px 0;">
@@ -296,8 +377,9 @@ const views = {
             <section class="products-section container" style="padding-top: 30px;">
                 <div class="sorting-row" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px;">
                     ${state.isAdminAuth ? `
-                        <div>
-                            <button class="btn btn-primary" onclick="openProductModalWithCat('${catId}')"><i class="fas fa-plus"></i> إضافة منتج لهذا القسم</button>
+                        <div style="display:flex; gap:10px;">
+                            <button class="btn btn-primary" onclick="openProductModalWithCat('${catId}')"><i class="fas fa-plus"></i> منتج جديد</button>
+                            <button class="btn btn-secondary" onclick="openSubCategoryModal('${catId}')"><i class="fas fa-layer-group"></i> تصنيف داخلي جديد</button>
                         </div>
                     ` : '<div></div>'}
                     <div class="sort-control" style="display: flex; align-items: center; gap: 10px;">
@@ -309,10 +391,7 @@ const views = {
                         </select>
                     </div>
                 </div>
-                ${catProducts.length > 0 ?
-                `<div class="product-grid">${renderProductsGrid(sortProductsList(catProducts))}</div>` :
-                `<p style="text-align:center; font-size:18px;">لا توجد منتجات في هذا القسم حاليا.</p>`
-            }
+                ${catProducts.length > 0 ? sectionsHTML : `<p style="text-align:center; font-size:18px;">لا توجد منتجات في هذا القسم حاليا.</p>`}
             </section>
         `;
     },
@@ -495,12 +574,14 @@ const views = {
                                 <tbody>
                                     ${state.products.map(p => {
             const cat = state.categories.find(c => c.id === p.categoryId);
+            const subCat = p.subCategoryId ? state.subCategories.find(s => s.id === p.subCategoryId) : null;
+            const catText = cat ? cat.name + (subCat ? ` <strong style="color:var(--primary-color);">(${subCat.name})</strong>` : '') : '-';
             return `
                                         <tr>
                                             <td><img src="${p.image}" alt=""></td>
                                             <td>${p.name}</td>
                                             <td>${p.price} ج</td>
-                                            <td>${cat ? cat.name : '-'}</td>
+                                            <td>${catText}</td>
                                             <td>${p.inStock ? '<span style="color:green;">متوفر</span>' : '<span style="color:red;">غير متوفر</span>'}</td>
                                             <td>${p.isOffer ? '<span style="color:orange;">نعم</span>' : 'لا'}</td>
                                             <td class="action-btns">
@@ -517,7 +598,7 @@ const views = {
                     <!-- Categories Panel -->
                     <div id="panel-categories" class="admin-panel">
                         <div class="admin-header">
-                            <h3>الأقسام (${state.categories.length})</h3>
+                            <h3>الأقسام والتصنيفات الداخلية (${state.categories.length})</h3>
                             <form id="addCategoryForm" style="display: flex; gap: 10px;">
                                 <input type="text" id="newCategoryName" placeholder="اسم القسم الجديد" required style="padding: 10px; border: 1px solid #ccc; border-radius: 4px;">
                                 <button type="submit" class="btn btn-primary">إضافة</button>
@@ -527,7 +608,8 @@ const views = {
                             <thead>
                                 <tr>
                                     <th>الصورة</th>
-                                    <th>الاسم</th>
+                                    <th>القسم الرئيسي</th>
+                                    <th style="width: 40%;">التصنيفات الداخلية (اضغط للإدارة)</th>
                                     <th>الإجراءات</th>
                                 </tr>
                             </thead>
@@ -535,7 +617,19 @@ const views = {
                                 ${state.categories.map(c => `
                                     <tr>
                                         <td><img src="${c.image || ''}" alt="" style="width:50px; height:50px; object-fit:cover; border-radius:4px;"></td>
-                                        <td>${c.name}</td>
+                                        <td style="font-weight: bold;">${c.name}</td>
+                                        <td>
+                                            ${state.subCategories.filter(sc => sc.categoryId === c.id).map(sc => `
+                                                <div style="display:flex; justify-content:space-between; align-items:center; background:#f0f0f0; padding:5px 10px; margin-bottom:5px; border-radius:4px;">
+                                                    <span style="font-size: 14px;">${sc.name}</span>
+                                                    <div>
+                                                        <button class="btn" style="padding:2px 5px; font-size:12px; background:none; border:none; cursor:pointer;" onclick="editSubCategory('${sc.id}')"><i class="fas fa-edit" style="color:var(--secondary-color)"></i></button>
+                                                        <button class="btn" style="padding:2px 5px; font-size:12px; color:red; background:none; border:none; cursor:pointer;" onclick="deleteSubCategory('${sc.id}')"><i class="fas fa-trash"></i></button>
+                                                    </div>
+                                                </div>
+                                            `).join('')}
+                                            <button class="btn btn-outline" style="padding:5px; font-size:12px; width:100%; margin-top:5px;" onclick="openSubCategoryModal('${c.id}')"><i class="fas fa-plus"></i> إضافة تصنيف داخلي جديد</button>
+                                        </td>
                                         <td class="action-btns">
                                             <button class="btn btn-secondary" onclick="editCategory('${c.id}')">تعديل</button>
                                             <button class="btn" style="background-color: #e74c3c; color: white;" onclick="deleteCategory('${c.id}')">حذف</button>
@@ -1038,6 +1132,7 @@ function setupAdminListeners() {
                 price: parseFloat(document.getElementById('adminProdPrice').value),
                 oldPrice: document.getElementById('adminProdOldPrice').value ? parseFloat(document.getElementById('adminProdOldPrice').value) : null,
                 categoryId: document.getElementById('adminProdCat').value,
+                subCategoryId: document.getElementById('adminProdSubCat').value || null,
                 image: document.getElementById('adminProdImgData').value,
                 description: document.getElementById('adminProdDesc').value,
                 inStock: document.getElementById('adminProdStock').checked,
@@ -1099,6 +1194,43 @@ function setupAdminListeners() {
             submitBtn.disabled = false;
         });
     }
+
+    const subCatForm = document.getElementById('subCategoryForm');
+    if (subCatForm) {
+        subCatForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const submitBtn = subCatForm.querySelector('button[type="submit"]');
+            const originalBtnText = submitBtn.innerText;
+            submitBtn.innerText = '...';
+            submitBtn.disabled = true;
+
+            const name = document.getElementById('adminSubCatName').value;
+            const parentId = document.getElementById('adminSubCatParentId').value;
+            const newSubCat = {
+                id: 'sc_' + Date.now(),
+                categoryId: parentId,
+                name: name
+            };
+
+            state.subCategories.push(newSubCat);
+            saveData();
+            document.getElementById('subCategoryModal').classList.remove('active');
+
+            if (state.currentView === 'admin') {
+                renderView('admin');
+                setTimeout(() => {
+                    const el = document.querySelectorAll('.admin-menu li')[1];
+                    if (el) el.click();
+                }, 0);
+            } else {
+                renderView(state.currentView, state.currentParam);
+            }
+
+            syncToFirebase('set', `subCategories/${newSubCat.id}`, newSubCat);
+            submitBtn.innerText = originalBtnText;
+            submitBtn.disabled = false;
+        });
+    }
 }
 
 window.openProductModal = function () {
@@ -1111,6 +1243,9 @@ window.openProductModal = function () {
     const catSelect = document.getElementById('adminProdCat');
     if (catSelect) {
         catSelect.innerHTML = state.categories.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+        if (state.categories.length > 0) {
+            populateSubCategoriesOptions(state.categories[0].id);
+        }
     }
 
     document.getElementById('productModalTitle').innerText = 'إضافة منتج';
@@ -1133,6 +1268,7 @@ window.editProduct = function (id) {
     }
 
     document.getElementById('adminProdCat').value = p.categoryId;
+    populateSubCategoriesOptions(p.categoryId, p.subCategoryId);
     document.getElementById('adminProdImgData').value = p.image;
 
     // update preview
@@ -1217,6 +1353,79 @@ window.deleteCategory = function (id) {
         syncToFirebase('remove', `categories/${id}`);
     }
 }
+
+window.openSubCategoryModal = function (catId) {
+    document.getElementById('subCategoryForm').reset();
+    document.getElementById('adminSubCatParentId').value = catId;
+    document.getElementById('subCategoryModal').classList.add('active');
+}
+
+window.editSubCategory = function (scId) {
+    const sc = state.subCategories.find(s => s.id === scId);
+    if (!sc) return;
+    const newName = prompt('اسم التصنيف الداخلي الجديد:', sc.name);
+    if (newName && newName.trim() !== '') {
+        sc.name = newName.trim();
+        saveData();
+        if (state.currentView === 'admin') {
+            renderView('admin');
+            setTimeout(() => {
+                const el = document.querySelectorAll('.admin-menu li')[1];
+                if (el) el.click();
+            }, 0);
+        } else {
+            renderView(state.currentView, state.currentParam);
+        }
+        syncToFirebase('set', `subCategories/${sc.id}`, sc);
+    }
+}
+
+window.deleteSubCategory = function (scId) {
+    const hasProducts = state.products.some(p => p.subCategoryId === scId);
+    if (hasProducts) {
+        alert('لا يمكن حذف قسم يحتوي على منتجات. يرجى نقل أو حذف المنتجات أولاً.');
+        return;
+    }
+    if (confirm('هل أنت متأكد من حذف هذا التصنيف الداخلي؟')) {
+        state.subCategories = state.subCategories.filter(s => s.id !== scId);
+        saveData();
+        if (state.currentView === 'admin') {
+            renderView('admin');
+            setTimeout(() => {
+                const el = document.querySelectorAll('.admin-menu li')[1];
+                if (el) el.click();
+            }, 0);
+        } else {
+            renderView(state.currentView, state.currentParam);
+        }
+        syncToFirebase('remove', `subCategories/${scId}`);
+    }
+}
+
+window.populateSubCategoriesOptions = function (catId, selectedSubId = null) {
+    const subCatSelect = document.getElementById('adminProdSubCat');
+    if (!subCatSelect) return;
+
+    const subCats = state.subCategories.filter(s => s.categoryId === catId);
+    let html = '<option value="">بدون تصنيف داخلي</option>';
+    html += subCats.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+    subCatSelect.innerHTML = html;
+
+    if (selectedSubId) {
+        subCatSelect.value = selectedSubId;
+    }
+}
+
+window.scrollSection = function (id, direction) {
+    const wrapper = document.getElementById('scroll-wrapper-' + id);
+    if (wrapper) {
+        const scrollAmount = 310; // width of card + gap
+        // HTML has dir="rtl" on the html element
+        const isRtl = document.documentElement.dir === 'rtl' || getComputedStyle(wrapper).direction === 'rtl';
+        const scrollLeftVal = isRtl ? -scrollAmount : scrollAmount;
+        wrapper.scrollBy({ left: direction * scrollLeftVal, behavior: 'smooth' });
+    }
+};
 
 // Expose internal functions to the global window object to make HTML inline onclick attributes work with type="module"
 window.navigateTo = navigateTo;

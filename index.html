@@ -91,7 +91,7 @@
                 <h3 class="footer-logo">
                     <img src="logo.png" alt="العاصمة الطبية" class="logo-img"
                         onerror="this.src='https://via.placeholder.com/40?text=Logo'"
-                        style="filter: brightness(0) invert(1);">
+                        style="background: white; border-radius: 4px; padding: 2px;">
                     العاصمة <span>الطبية</span>
                 </h3>
                 <p>شركة متخصصة في توريد المستلزمات الطبية ومستحضرات التجميل والمستلزمات الرياضية ومستلزمات سلامة الغذاء،
@@ -214,7 +214,14 @@
                 </div>
                 <div class="form-group">
                     <label>القسم</label>
-                    <select id="adminProdCat" required>
+                    <select id="adminProdCat" required onchange="populateSubCategoriesOptions(this.value)">
+                        <!-- Options injected by JS -->
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>التصنيف الداخلي (اختياري)</label>
+                    <select id="adminProdSubCat">
+                        <option value="">بدون تصنيف داخلي</option>
                         <!-- Options injected by JS -->
                     </select>
                 </div>
@@ -243,6 +250,23 @@
                     </label>
                 </div>
                 <button type="submit" class="btn btn-primary btn-block">حفظ المنتج</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Subcategory Modal -->
+    <div class="modal" id="subCategoryModal">
+        <div class="modal-content">
+            <span class="close-modal" aria-label="Close"
+                onclick="document.getElementById('subCategoryModal').classList.remove('active')">&times;</span>
+            <h2>إضافة تصنيف داخلي</h2>
+            <form id="subCategoryForm">
+                <input type="hidden" id="adminSubCatParentId">
+                <div class="form-group">
+                    <label>اسم التصنيف الداخلي</label>
+                    <input type="text" id="adminSubCatName" required>
+                </div>
+                <button type="submit" class="btn btn-primary btn-block">حفظ التصنيف</button>
             </form>
         </div>
     </div>

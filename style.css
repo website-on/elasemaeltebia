@@ -382,6 +382,71 @@ ul {
     gap: 30px;
 }
 
+.horizontal-scroll-wrapper {
+    display: flex;
+    overflow-x: auto;
+    gap: 30px;
+    padding: 15px 5px 25px 5px;
+    margin: -15px 0 0 0;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: thin;
+    scrollbar-color: var(--primary-color) var(--bg-light);
+}
+
+.horizontal-scroll-wrapper::-webkit-scrollbar {
+    height: 8px;
+}
+
+.horizontal-scroll-wrapper::-webkit-scrollbar-track {
+    background: var(--bg-light);
+    border-radius: 4px;
+}
+
+.scroll-arrows {
+    display: flex;
+    gap: 8px;
+}
+
+.scroll-arrow {
+    background: var(--white);
+    color: var(--primary-color);
+    border: 1px solid var(--primary-color);
+    width: 32px;
+    height: 32px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: var(--transition);
+}
+
+.scroll-arrow:hover {
+    background: var(--primary-color);
+    color: var(--white);
+}
+
+@media (max-width: 768px) {
+    .scroll-arrows {
+        display: none;
+    }
+}
+
+
+
+.horizontal-scroll-wrapper::-webkit-scrollbar-thumb {
+    background-color: var(--primary-color);
+    border-radius: 4px;
+}
+
+.horizontal-scroll-wrapper .product-card {
+    min-width: 250px;
+    max-width: 280px;
+    flex: 0 0 auto;
+    scroll-snap-align: start;
+}
+
 .product-card {
     background-color: var(--white);
     border-radius: 8px;
