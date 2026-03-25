@@ -308,7 +308,7 @@ const views = {
             <section class="hero">
                 <div class="hero-content">
                     <h1 class="hero-title">العاصمة الطبية</h1>
-                    <p class="hero-subtitle">شريكك الموثوق في المستلزمات الطبية ومستحضرات التجميل والسلامة الغذائية</p>
+                    <p class="hero-subtitle">شريكك الموثوق في المستلزمات الطبية ومستحضرات التجميل ومستلزمات سلامة الغذاء</p>
                     <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
                         <button class="btn btn-secondary" style="font-size: 18px; padding: 15px 30px;" data-view="category" data-cat-id="1">تسوق المستلزمات الطبية</button>
                         <button class="btn btn-accent" style="font-size: 18px; padding: 15px 30px;" data-view="offers">شاهد أحدث العروض</button>
