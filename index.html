@@ -202,10 +202,17 @@
                     <label>الاسم</label>
                     <input type="text" id="adminProdName" required>
                 </div>
-                <div class="form-group" style="display:flex; gap:15px;">
+                <div class="form-group" style="display:flex; flex-direction: column; gap: 5px; margin-bottom: 10px;">
+                    <label style="display:flex; align-items:center; gap:5px; font-weight: bold;">
+                        <input type="checkbox" id="adminProdOnDemand"
+                            onchange="document.getElementById('priceContainer').style.display = this.checked ? 'none' : 'flex'">
+                        السعر حسب الطلب
+                    </label>
+                </div>
+                <div class="form-group" id="priceContainer" style="display:flex; gap:15px;">
                     <div style="flex:1;">
                         <label>السعر</label>
-                        <input type="number" id="adminProdPrice" required>
+                        <input type="number" id="adminProdPrice">
                     </div>
                     <div style="flex:1;">
                         <label>السعر القديم (اختياري)</label>

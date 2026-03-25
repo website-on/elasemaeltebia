@@ -308,7 +308,7 @@ const views = {
             <section class="hero">
                 <div class="hero-content">
                     <h1 class="hero-title">العاصمة الطبية</h1>
-                    <p class="hero-subtitle">شريكك الموثوق في المستلزمات الطبية ومستحضرات التجميل والسلامة</p>
+                    <p class="hero-subtitle">شريكك الموثوق في المستلزمات الطبية ومستحضرات التجميل والسلامة الغذائية</p>
                     <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
                         <button class="btn btn-secondary" style="font-size: 18px; padding: 15px 30px;" data-view="category" data-cat-id="1">تسوق المستلزمات الطبية</button>
                         <button class="btn btn-accent" style="font-size: 18px; padding: 15px 30px;" data-view="offers">شاهد أحدث العروض</button>
@@ -438,8 +438,7 @@ const views = {
                         ${product.inStock ? 'متوفر بالمخزون' : 'غير متوفر حالياً'}
                     </div>
                     <div class="product-details-price">
-                        ${product.price} جنيه
-                        ${product.oldPrice ? `<span class="old-price">${product.oldPrice} جنيه</span>` : ''}
+                        ${product.onDemand ? 'حسب الطلب' : `${product.price} جنيه ${product.oldPrice ? `<span class="old-price">${product.oldPrice} جنيه</span>` : ''}`}
                     </div>
                     <p class="product-details-desc">${product.description || 'لا يوجد وصف متاح.'}</p>
                     
@@ -520,15 +519,47 @@ const views = {
                 <h1>سياسة البيع</h1>
             </div>
         </div>
-        <div class="content-section">
-            <h2 style="color: var(--primary-color); margin-bottom: 20px;">سياسة البيع والاسترجاع</h2>
-            <p>نحرص في العاصمة الطبية على راحة عملائنا وثقتهم. نظرا لطبيعة المنتجات الطبية ومستحضرات التجميل، نطبق السياسات التالية:</p>
+        <div class="content-section" style="line-height: 1.8;">
+            <p style="text-align: center; font-size: 1.1em; font-weight: bold; margin-bottom: 30px;">
+                نضع ثقتكم وراحتكم في مقدمة أولوياتنا، ونسعى دائمًا لتقديم منتجات آمنة وتجربة شراء مميزة تليق بكم.
+            </p>
+            
+            <h2 style="color: var(--primary-color); margin-bottom: 15px;">سياسة البيع</h2>
             <ul>
-                <li style="margin-bottom: 10px;">- <strong>جودة المنتجات:</strong> نضمن أن جميع منتجاتنا مطابقة للمواصفات وصالحة للاستخدام.</li>
-                <li style="margin-bottom: 10px;">- <strong>تأكيد الطلب:</strong> يتم التأكيد عبر الهاتف أو الواتساب قبل شحن الأوردر.</li>
-                <li style="margin-bottom: 10px;">- <strong>الوقت المستغرق:</strong> يتم التوصيل في أسرع وقت وفقا للمنطقة.</li>
-                <li style="margin-bottom: 10px;">- <strong>الاسترجاع والاستبدال:</strong> لا يتم استرجاع المستلزمات الطبية المفتوحة حفاظا على الصحة العامة. يمكن استبدال المنتجات التالفة بسبب الشحن في غضون 24 ساعة من الاستلام.</li>
+                <li style="margin-bottom: 15px;"><strong>-</strong> نحرص على توفير منتجات أصلية بجودة موثوقة ومعتمدة.</li>
+                <li style="margin-bottom: 15px;"><strong>-</strong> نلتزم بتوضيح كافة تفاصيل المنتجات بشفافية ودقة.</li>
+                <li style="margin-bottom: 15px;"><strong>-</strong> يتم تنفيذ الطلبات في أسرع وقت ممكن وفقًا لتوفر المنتجات وموقع العميل.</li>
             </ul>
+
+            <h2 style="color: var(--primary-color); margin-bottom: 15px;">الاستبدال والاسترجاع</h2>
+            <p>حرصًا على رضاكم، يمكنكم طلب الاستبدال أو الاسترجاع خلال 7 أيام من تاريخ الاستلام في الحالات التالية:</p>
+            <ul>
+                <li style="margin-bottom: 10px;"><strong>-</strong> وجود عيب صناعي بالمنتج.</li>
+                <li style="margin-bottom: 10px;"><strong>-</strong> استلام منتج غير مطابق للطلب.</li>
+                <li style="margin-bottom: 10px;"><strong>-</strong> تعرض المنتج للتلف أثناء الشحن.</li>
+            </ul>
+            <p style="margin-top: 15px; font-weight: bold;">الشروط:</p>
+            <ul>
+                <li style="margin-bottom: 10px;"><strong>-</strong> أن يكون المنتج بحالته الأصلية وغير مستخدم.</li>
+                <li style="margin-bottom: 10px;"><strong>-</strong> إرفاق الفاتورة أو ما يثبت عملية الشراء.</li>
+            </ul>
+
+            <h2 style="color: var(--primary-color); margin-bottom: 15px; margin-top: 25px;">المنتجات غير القابلة للاسترجاع</h2>
+            <p>حفاظًا على سلامتكم:</p>
+            <ul>
+                <li style="margin-bottom: 10px;"><strong>-</strong> لا يمكن استرجاع المنتجات الطبية ذات الاستخدام الشخصي بعد فتحها.</li>
+                <li style="margin-bottom: 10px;"><strong>-</strong> لا يمكن استرجاع مستحضرات التجميل بعد فتح العبوة أو استخدامها.</li>
+            </ul>
+
+            <h2 style="color: var(--primary-color); margin-bottom: 15px; margin-top: 25px;">الشحن</h2>
+            <ul>
+                <li style="margin-bottom: 10px;"><strong>-</strong> تتحمل الشركة تكلفة الشحن في حال وجود خطأ أو عيب بالمنتج.</li>
+                <li style="margin-bottom: 10px;"><strong>-</strong> يتحمل العميل تكلفة الشحن في غير ذلك من الحالات.</li>
+            </ul>
+
+            <p style="text-align: center; font-size: 1.1em; font-weight: bold; margin-top: 30px; color: var(--secondary-color);">
+                ثقتكم محل تقديرنا الدائم، ونسعد بخدمتكم بكل اهتمام وحرص.
+            </p>
         </div>
     `,
     admin: () => {
@@ -579,7 +610,7 @@ const views = {
                                         <tr>
                                             <td><img src="${p.image}" alt=""></td>
                                             <td>${p.name}</td>
-                                            <td>${p.price} ج</td>
+                                            <td>${p.onDemand ? 'حسب الطلب' : `${p.price} ج`}</td>
                                             <td>${catText}</td>
                                             <td>${p.inStock ? '<span style="color:green;">متوفر</span>' : '<span style="color:red;">غير متوفر</span>'}</td>
                                             <td>${p.isOffer ? '<span style="color:orange;">نعم</span>' : 'لا'}</td>
@@ -691,8 +722,7 @@ function renderProductsGrid(productsList) {
                     <span class="product-category">${cat ? cat.name : ''}</span>
                     <h3 class="product-title" onclick="navigateTo('product', '${p.id}')">${p.name}</h3>
                     <div class="product-price">
-                        ${p.price} ج
-                        ${p.oldPrice ? `<span class="old-price">${p.oldPrice} ج</span>` : ''}
+                        ${p.onDemand ? 'حسب الطلب' : `${p.price} ج ${p.oldPrice ? `<span class="old-price">${p.oldPrice} ج</span>` : ''}`}
                     </div>
                     <div class="product-action">
                         <button class="btn btn-primary btn-block" onclick="addToCart('${p.id}', 1)" ${!p.inStock ? 'disabled style="opacity:0.6"' : ''}>
@@ -865,7 +895,7 @@ function updateCartUI() {
 
     itemsContainer.innerHTML = state.cart.map((item, index) => {
         const itemTotal = item.product.price * item.qty;
-        total += itemTotal;
+        if (!item.product.onDemand) total += itemTotal;
         return `
             <div class="cart-item">
                 <img src="${item.product.image}" alt="${item.product.name}" class="cart-item-img">
@@ -879,7 +909,7 @@ function updateCartUI() {
                             <button type="button" onclick="updateCartItemQty(${index}, -1)" style="width:30px;height:30px;font-size:16px; background:var(--bg-light); border:none; cursor:pointer;">-</button>
                         </div>
                     </div>
-                    <div class="cart-item-price" style="margin-top:5px;">${itemTotal} ج</div>
+                    <div class="cart-item-price" style="margin-top:5px;">${item.product.onDemand ? 'حسب الطلب' : itemTotal + ' ج'}</div>
                 </div>
                 <div class="cart-item-controls">
                     <button class="remove-item" onclick="removeFromCart(${index})" title="حذف من العربة"><i class="fas fa-trash"></i></button>
@@ -916,9 +946,9 @@ function submitOrder() {
 
     state.cart.forEach((item, index) => {
         const itemTotal = item.product.price * item.qty;
-        total += itemTotal;
+        if (!item.product.onDemand) total += itemTotal;
         message += `*${index + 1}. ${item.product.name}*\n`;
-        message += `الكمية: ${item.qty} | السعر: ${itemTotal} جنيه\n\n`;
+        message += `الكمية: ${item.qty} | السعر: ${item.product.onDemand ? 'حسب الطلب' : itemTotal + ' جنيه'}\n\n`;
     });
 
     message += `*إجمالي الطلب:* ${total} جنيه\n\n`;
@@ -1125,11 +1155,13 @@ function setupAdminListeners() {
             submitBtn.disabled = true;
 
             const id = document.getElementById('adminProdId').value || 'p_' + Date.now();
+            const isOnDemand = document.getElementById('adminProdOnDemand') ? document.getElementById('adminProdOnDemand').checked : false;
             const product = {
                 id: id,
                 name: document.getElementById('adminProdName').value,
-                price: parseFloat(document.getElementById('adminProdPrice').value),
-                oldPrice: document.getElementById('adminProdOldPrice').value ? parseFloat(document.getElementById('adminProdOldPrice').value) : null,
+                onDemand: isOnDemand,
+                price: isOnDemand ? 0 : (parseFloat(document.getElementById('adminProdPrice').value) || 0),
+                oldPrice: (!isOnDemand && document.getElementById('adminProdOldPrice').value) ? parseFloat(document.getElementById('adminProdOldPrice').value) : null,
                 categoryId: document.getElementById('adminProdCat').value,
                 subCategoryId: document.getElementById('adminProdSubCat').value || null,
                 image: document.getElementById('adminProdImgData').value,
@@ -1238,6 +1270,11 @@ window.openProductModal = function () {
     document.getElementById('adminProdImgData').value = '';
     document.getElementById('imgPreview').style.display = 'none';
 
+    if (document.getElementById('adminProdOnDemand')) {
+        document.getElementById('adminProdOnDemand').checked = false;
+        document.getElementById('priceContainer').style.display = 'flex';
+    }
+
     // Populate categories
     const catSelect = document.getElementById('adminProdCat');
     if (catSelect) {
@@ -1257,7 +1294,11 @@ window.editProduct = function (id) {
 
     document.getElementById('adminProdId').value = p.id;
     document.getElementById('adminProdName').value = p.name;
-    document.getElementById('adminProdPrice').value = p.price;
+    if (document.getElementById('adminProdOnDemand')) {
+        document.getElementById('adminProdOnDemand').checked = p.onDemand || false;
+        document.getElementById('priceContainer').style.display = p.onDemand ? 'none' : 'flex';
+    }
+    document.getElementById('adminProdPrice').value = p.onDemand ? '' : p.price;
     document.getElementById('adminProdOldPrice').value = p.oldPrice || '';
 
     // Populate categories before setting value
