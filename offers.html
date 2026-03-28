@@ -174,15 +174,65 @@
             <span class="close-modal" aria-label="Close"
                 onclick="document.getElementById('adminLoginModal').classList.remove('active')">&times;</span>
             <h2>تسجيل دخول الإدارة</h2>
-            <form id="adminLoginForm">
+            <div id="adminLoginForm">
+                <input type="hidden" id="adminCode">
                 <div class="form-group">
-                    <label>رمز الدخول</label>
-                    <input type="password" id="adminCode" required>
+                    <label>الباسوورد</label>
+                    <input type="password" id="password" placeholder="ادخل الباسورد"
+                        style="width: 100%; padding: 10px; border-radius: 4px; border: 1px solid #ccc; font-family: inherit;">
                 </div>
-                <button type="submit" class="btn btn-primary btn-block">دخول</button>
-            </form>
+                <button onclick="login()" class="btn btn-primary btn-block">دخول</button>
+            </div>
         </div>
     </div>
+
+    <!-- Firebase Auth for Admin -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDKRNpFCvTxV0da-rp9OJB0hO1lbs8vnZw",
+            authDomain: "elasemaeltbia.firebaseapp.com",
+            projectId: "elasemaeltbia"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+
+        const ADMIN_EMAIL = "eng.emara888@gmail.com";
+
+        window.login = function () {
+            const password = document.getElementById("password").value;
+            const loginBtn = document.querySelector('#adminLoginForm button');
+            if (loginBtn) {
+                loginBtn.innerText = 'جاري الدخول...';
+                loginBtn.disabled = true;
+            }
+
+            signInWithEmailAndPassword(auth, ADMIN_EMAIL, password)
+                .then(() => {
+                    alert("تم الدخول ✅");
+                    document.getElementById('adminLoginModal').classList.remove('active');
+                    if (typeof state !== 'undefined') state.isAdminAuth = true;
+                    sessionStorage.setItem('mc_admin_auth', 'true');
+                    if (window.navigateTo) window.navigateTo('admin');
+                    else window.location.href = '?view=admin';
+                    document.getElementById("password").value = '';
+                    if (loginBtn) {
+                        loginBtn.innerText = 'دخول';
+                        loginBtn.disabled = false;
+                    }
+                })
+                .catch(() => {
+                    alert("الباسورد غلط ❌");
+                    if (loginBtn) {
+                        loginBtn.innerText = 'دخول';
+                        loginBtn.disabled = false;
+                    }
+                });
+        }
+    </script>
 
     <!-- Product Modal HTML (Global for Admin) -->
     <div class="modal" id="productModal">
