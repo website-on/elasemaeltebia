@@ -1026,7 +1026,7 @@ function initAdmin() {
 
             if (clickCount >= 5) {
                 const code = prompt("أدخل الرمز السري:");
-                if (code === '1357') {
+                if (code === '135700') {
                     state.isAdminAuth = true;
                     sessionStorage.setItem('mc_admin_auth', 'true');
                     navigateTo('admin');
@@ -1042,10 +1042,10 @@ function initAdmin() {
     window.addEventListener('keydown', (e) => {
         if (e.key >= '0' && e.key <= '9') {
             state.adminKeys += e.key;
-            if (state.adminKeys.length > 4) {
+            if (state.adminKeys.length > 6) {
                 state.adminKeys = state.adminKeys.substring(1);
             }
-            if (state.adminKeys === '1357') {
+            if (state.adminKeys === '135700') {
                 if (state.isAdminAuth) {
                     navigateTo('admin');
                 } else {
@@ -1062,7 +1062,7 @@ function initAdmin() {
     document.getElementById('adminLoginForm').addEventListener('submit', (e) => {
         e.preventDefault();
         const codeInput = document.getElementById('adminCode');
-        if (codeInput.value === '1357') {
+        if (codeInput.value === '135700') {
             document.getElementById('adminLoginModal').classList.remove('active');
             state.isAdminAuth = true;
             sessionStorage.setItem('mc_admin_auth', 'true');
