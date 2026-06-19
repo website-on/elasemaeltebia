@@ -175,7 +175,14 @@ function handleUrlRoute() {
 
 async function fetchInitialData() {
     try {
-        const response = await fetch("https://elasemaeltbia-default-rtdb.firebaseio.com/medical_capital.json");
+        const response = await fetch("https://elasemaeltbia-default-rtdb.firebaseio.com/medical_capital.json?_t=" + new Date().getTime(), {
+            cache: "no-store",
+            headers: {
+                'Cache-Control': 'no-cache, no-store, must-revalidate',
+                'Pragma': 'no-cache',
+                'Expires': '0'
+            }
+        });
         if (!response.ok) throw new Error("Fetch failed");
         const data = await response.json();
 
@@ -264,18 +271,11 @@ function saveData() {
 
 async function syncToFirebase(action, pathStr, data = null) {
     try {
-        const url = `https://elasemaeltbia-default-rtdb.firebaseio.com/medical_capital/${pathStr}.json`;
-        let method = 'PUT';
-
-        if (action === 'set') method = 'PUT';
-        else if (action === 'update') method = 'PATCH';
-        else if (action === 'remove') method = 'DELETE';
-
-        await fetch(url, {
-            method: method,
-            headers: { 'Content-Type': 'application/json' },
-            body: data ? JSON.stringify(data) : undefined
-        });
+        if (!db) return;
+        const dbRef = db.ref(`medical_capital/${pathStr}`);
+        if (action === 'set') await dbRef.set(data);
+        if (action === 'update') await dbRef.update(data);
+        if (action === 'remove') await dbRef.remove();
     } catch (e) {
         console.warn('Firebase Sync Ignored:', e.message);
     }
