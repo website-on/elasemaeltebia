@@ -175,11 +175,11 @@ function handleUrlRoute() {
 
 async function fetchInitialData() {
     try {
-        if (!db) throw new Error("Firebase DB not initialized");
-        const snapshot = await db.ref('medical_capital').get();
-        if (snapshot.exists()) {
-            const data = snapshot.val();
+        const response = await fetch("https://elasemaeltbia-default-rtdb.firebaseio.com/medical_capital.json");
+        if (!response.ok) throw new Error("Fetch failed");
+        const data = await response.json();
 
+        if (data) {
             // Format Categories
             if (data.categories) {
                 state.categories = Object.keys(data.categories).map(key => ({
@@ -264,11 +264,18 @@ function saveData() {
 
 async function syncToFirebase(action, pathStr, data = null) {
     try {
-        if (!db) return;
-        const dbRef = db.ref(`medical_capital/${pathStr}`);
-        if (action === 'set') await dbRef.set(data);
-        if (action === 'update') await dbRef.update(data);
-        if (action === 'remove') await dbRef.remove();
+        const url = `https://elasemaeltbia-default-rtdb.firebaseio.com/medical_capital/${pathStr}.json`;
+        let method = 'PUT';
+
+        if (action === 'set') method = 'PUT';
+        else if (action === 'update') method = 'PATCH';
+        else if (action === 'remove') method = 'DELETE';
+
+        await fetch(url, {
+            method: method,
+            headers: { 'Content-Type': 'application/json' },
+            body: data ? JSON.stringify(data) : undefined
+        });
     } catch (e) {
         console.warn('Firebase Sync Ignored:', e.message);
     }
@@ -804,11 +811,42 @@ function navigateTo(view, param = null) {
 }
 
 function renderView(view, param = null) {
-    if (views[view]) {
-        appContent.innerHTML = views[view](param);
-    } else {
-        appContent.innerHTML = `<div class="container" style="padding: 100px 0; text-align:center;"><h2>الصفحة غير موجودة</h2></div>`;
+    let overlay = document.getElementById('medical-transition-overlay');
+    if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.id = 'medical-transition-overlay';
+        overlay.innerHTML = `
+            <svg class="ecg-loader" viewBox="0 0 500 200">
+                <path class="ecg-path" d="M0,100 L150,100 L175,50 L225,180 L275,20 L325,150 L350,100 L500,100"></path>
+            </svg>
+            <h2 style="font-family:'Cairo'; font-weight:800; font-size:36px; letter-spacing:1px; margin-top:20px;">العاصمة الطبية</h2>
+            <p style="opacity:0.9; font-size:18px;">نعتني بصحتكم</p>
+        `;
+        document.body.appendChild(overlay);
     }
+
+    // Trigger overlay to enter
+    overlay.style.display = 'flex';
+    overlay.classList.remove('exit');
+    setTimeout(() => overlay.classList.add('active'), 10);
+
+    setTimeout(() => {
+        if (views[view]) {
+            appContent.innerHTML = views[view](param);
+        } else {
+            appContent.innerHTML = `<div class="container" style="padding: 100px 0; text-align:center;"><h2>الصفحة غير موجودة</h2></div>`;
+        }
+        window.scrollTo(0, 0);
+
+        // Wait a small moment before opening the curtain
+        setTimeout(() => {
+            overlay.classList.add('exit');
+            overlay.classList.remove('active');
+            setTimeout(() => {
+                overlay.style.display = 'none';
+            }, 600);
+        }, 500);
+    }, 550);
 }
 
 // Global helper for detail page
@@ -1121,25 +1159,52 @@ function setupAdminListeners() {
         });
     }
 
-    // Local File Image Upload
+    // Cloudinary Image Upload
     const imageInput = document.getElementById('imageInput');
     const urlInput = document.getElementById("adminProdImgData");
     const preview = document.getElementById("imgPreview");
 
     if (imageInput) {
-        imageInput.addEventListener('change', function (e) {
+        imageInput.addEventListener('change', async function (e) {
             const file = e.target.files[0];
             if (file) {
-                const reader = new FileReader();
-                reader.onload = function (event) {
-                    const base64String = event.target.result;
-                    if (preview && urlInput) {
-                        preview.src = base64String;
-                        preview.style.display = "block";
-                        urlInput.value = base64String;
+                const uploadBtn = document.getElementById("upload_widget");
+                let originalText = "";
+                if (uploadBtn) {
+                    originalText = uploadBtn.innerHTML;
+                    uploadBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري الرفع...';
+                    uploadBtn.disabled = true;
+                }
+
+                const formData = new FormData();
+                formData.append('file', file);
+                formData.append('upload_preset', 'arlcmk0w');
+
+                try {
+                    const response = await fetch('https://api.cloudinary.com/v1_1/dwkwwltkv/image/upload', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    const data = await response.json();
+
+                    if (data.secure_url) {
+                        if (preview && urlInput) {
+                            preview.src = data.secure_url;
+                            preview.style.display = "block";
+                            urlInput.value = data.secure_url;
+                        }
+                    } else {
+                        alert("حدث خطأ أثناء رفع الصورة: " + (data.error ? data.error.message : 'Unknown error'));
                     }
-                };
-                reader.readAsDataURL(file);
+                } catch (error) {
+                    console.error('Error uploading image to Cloudinary:', error);
+                    alert("حدث خطأ أثناء رفع الصورة");
+                } finally {
+                    if (uploadBtn) {
+                        uploadBtn.innerHTML = originalText;
+                        uploadBtn.disabled = false;
+                    }
+                }
             }
         });
     }

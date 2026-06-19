@@ -1,15 +1,67 @@
 :root {
-    --primary-color: #0b7bb8;
-    --secondary-color: #21a366;
-    --accent-color: #f7941d;
-    --text-dark: #333333;
-    --text-light: #777777;
-    --bg-light: #f9f9f9;
+    --primary-color: #0a4d8c;
+    --secondary-color: #00a680;
+    --accent-color: #fca311;
+    --text-dark: #1a1a1a;
+    --text-light: #555555;
+    --bg-light: #f4f7fb;
     --white: #ffffff;
-    --border-color: #e5e5e5;
-    --shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
-    --shadow-hover: 0 10px 25px rgba(0, 0, 0, 0.1);
-    --transition: all 0.3s ease;
+    --border-color: #e2e8f0;
+    --shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+    --shadow-hover: 0 15px 35px rgba(0, 50, 100, 0.1);
+    --transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+/* Medical Overlay Transition */
+#medical-transition-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+    z-index: 99999;
+    display: none;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    color: white;
+    transform: translateY(100%);
+    transition: transform 0.5s cubic-bezier(0.85, 0, 0.15, 1);
+}
+
+#medical-transition-overlay.active {
+    transform: translateY(0);
+}
+
+#medical-transition-overlay.exit {
+    transform: translateY(-100%);
+}
+
+.ecg-loader {
+    width: 200px;
+    height: 120px;
+}
+
+.ecg-path {
+    stroke: var(--white);
+    stroke-width: 4;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    fill: none;
+    stroke-dasharray: 1000;
+    stroke-dashoffset: 1000;
+    animation: dash 1.5s linear infinite;
+}
+
+@keyframes dash {
+    0% {
+        stroke-dashoffset: 1000;
+    }
+
+    100% {
+        stroke-dashoffset: 0;
+    }
 }
 
 * {
@@ -55,12 +107,13 @@ ul {
 }
 
 .btn-primary {
-    background-color: var(--primary-color);
+    background: linear-gradient(135deg, var(--primary-color), #005f99);
     color: var(--white);
 }
 
 .btn-primary:hover {
-    background-color: #086191;
+    background: linear-gradient(135deg, #005f99, var(--primary-color));
+    box-shadow: 0 4px 15px rgba(10, 77, 140, 0.4);
 }
 
 .btn-secondary {
@@ -141,15 +194,23 @@ ul {
 .social-info a {
     color: var(--white);
     font-size: 16px;
+    transition: var(--transition);
+}
+
+.social-info a:hover {
+    color: var(--secondary-color);
+    transform: scale(1.1);
 }
 
 /* ================= Header ================= */
 .header {
-    background-color: var(--white);
+    background-color: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
     box-shadow: var(--shadow);
     position: sticky;
     top: 0;
     z-index: 100;
+    border-bottom: 2px solid var(--border-color);
 }
 
 .header-content {
@@ -346,8 +407,8 @@ ul {
 
 /* ================= Hero / Slider ================= */
 .hero {
-    background: linear-gradient(rgba(11, 123, 184, 0.8), rgba(33, 163, 102, 0.8)), url('https://images.unsplash.com/photo-1579684385127-1ef15d508118?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80') center/cover;
-    height: 400px;
+    background: linear-gradient(rgba(10, 77, 140, 0.85), rgba(0, 166, 128, 0.85)), url('https://images.unsplash.com/photo-1579684385127-1ef15d508118?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80') center/cover fixed;
+    height: 450px;
     display: flex;
     align-items: center;
     text-align: center;
@@ -449,16 +510,18 @@ ul {
 
 .product-card {
     background-color: var(--white);
-    border-radius: 8px;
+    border-radius: 12px;
     overflow: hidden;
     box-shadow: var(--shadow);
     transition: var(--transition);
     position: relative;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(10px);
 }
 
 .product-card:hover {
     box-shadow: var(--shadow-hover);
-    transform: translateY(-5px);
+    transform: translateY(-8px);
 }
 
 .product-img {
@@ -633,10 +696,14 @@ ul {
 
 /* ================= Contact / About / Policy Pages ================= */
 .page-header {
-    background-color: var(--primary-color);
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
     color: var(--white);
-    padding: 60px 0;
+    padding: 80px 0;
     text-align: center;
+    border-bottom-right-radius: 60px;
+    border-bottom-left-radius: 60px;
+    box-shadow: 0 10px 20px rgba(0, 166, 128, 0.15);
+    margin-bottom: 20px;
 }
 
 .page-header h1 {
@@ -805,11 +872,12 @@ ul {
 .modal-content {
     background-color: var(--white);
     margin: 3% auto;
-    padding: 20px;
-    border-radius: 8px;
+    padding: 30px;
+    border-radius: 16px;
     position: relative;
     box-shadow: var(--shadow-hover);
-    animation: fadeIn 0.3s ease;
+    animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    border-top: 5px solid var(--secondary-color);
 }
 
 .cart-modal {
