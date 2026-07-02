@@ -120,10 +120,10 @@ let state = {
 
 // --- initialization --- //
 document.addEventListener('DOMContentLoaded', async () => {
-    // Show loading state while fetching from Firebase
+    // Instantly prepare layout container without the "Loading" text delay
     const appContent = document.getElementById('app-content');
     if (appContent) {
-        appContent.innerHTML = `<div class="container" style="text-align:center; padding: 100px 0;"><h2>جاري تحميل البيانات...</h2></div>`;
+        appContent.innerHTML = '';
     }
 
     try {
@@ -315,10 +315,10 @@ const views = {
             <section class="hero">
                 <div class="hero-content">
                     <h1 class="hero-title">العاصمة الطبية</h1>
-                    <p class="hero-subtitle">شريكك الموثوق في المستلزمات الطبية ومستحضرات التجميل ومستلزمات سلامة الغذاء</p>
-                    <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
-                        <button class="btn btn-secondary" style="font-size: 18px; padding: 15px 30px;" data-view="category" data-cat-id="1">تسوق المستلزمات الطبية</button>
-                        <button class="btn btn-accent" style="font-size: 18px; padding: 15px 30px;" data-view="offers">شاهد أحدث العروض</button>
+                    <p class="hero-subtitle">شريكك الموثوق في المستلزمات الطبية ومستحضرات التجميل ومستلزمات سلامة الغذاء بأعلى المعايير العالمية</p>
+                    <div class="hero-actions">
+                        <button class="btn btn-hero-primary" data-view="category" data-cat-id="1">تسوق المنتجات <i class="fas fa-arrow-left" style="margin-right:8px;"></i></button>
+                        <button class="btn btn-hero-secondary" data-view="offers">شاهد العروض</button>
                     </div>
                 </div>
             </section>
@@ -811,42 +811,12 @@ function navigateTo(view, param = null) {
 }
 
 function renderView(view, param = null) {
-    let overlay = document.getElementById('medical-transition-overlay');
-    if (!overlay) {
-        overlay = document.createElement('div');
-        overlay.id = 'medical-transition-overlay';
-        overlay.innerHTML = `
-            <svg class="ecg-loader" viewBox="0 0 500 200">
-                <path class="ecg-path" d="M0,100 L150,100 L175,50 L225,180 L275,20 L325,150 L350,100 L500,100"></path>
-            </svg>
-            <h2 style="font-family:'Cairo'; font-weight:800; font-size:36px; letter-spacing:1px; margin-top:20px;">العاصمة الطبية</h2>
-            <p style="opacity:0.9; font-size:18px;">نعتني بصحتكم</p>
-        `;
-        document.body.appendChild(overlay);
+    if (views[view]) {
+        appContent.innerHTML = views[view](param);
+    } else {
+        appContent.innerHTML = `<div class="container" style="padding: 100px 0; text-align:center;"><h2>الصفحة غير موجودة</h2></div>`;
     }
-
-    // Trigger overlay to enter
-    overlay.style.display = 'flex';
-    overlay.classList.remove('exit');
-    setTimeout(() => overlay.classList.add('active'), 10);
-
-    setTimeout(() => {
-        if (views[view]) {
-            appContent.innerHTML = views[view](param);
-        } else {
-            appContent.innerHTML = `<div class="container" style="padding: 100px 0; text-align:center;"><h2>الصفحة غير موجودة</h2></div>`;
-        }
-        window.scrollTo(0, 0);
-
-        // Wait a small moment before opening the curtain
-        setTimeout(() => {
-            overlay.classList.add('exit');
-            overlay.classList.remove('active');
-            setTimeout(() => {
-                overlay.style.display = 'none';
-            }, 600);
-        }, 500);
-    }, 550);
+    window.scrollTo(0, 0);
 }
 
 // Global helper for detail page
